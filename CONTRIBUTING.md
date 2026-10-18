@@ -75,6 +75,6 @@ example `fix(parser): reject conflicting reel ids`. Before committing, inspect
 the staged diff, check executable bits, and scan for credentials or generated
 output.
 
-Fastbed does not yet have an owner-selected project license. Do not publish,
-redistribute, or accept external contributions as though a license had already
-been granted.
+Fastbed's public source and container do not yet have an owner-selected project
+license. Their visibility does not grant permission to redistribute, modify,
+or submit external contributions as though a license had already been granted.

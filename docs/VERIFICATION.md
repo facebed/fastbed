@@ -39,8 +39,10 @@ not the smallest request that happens to pass.
 
 The retained 2026-10-18 evidence in the original checkout records:
 
-- `artifacts/fastbed-embedded-verification-archive-full-20261018-02`: all
-  10,659 rows exact, with 257 shared unavailable fixtures and no new gap,
+- `artifacts/fastbed-scratch-static-archive-full-20261018-01`: all 10,659 rows
+  exact with the static musl/x86-64-v3 verification binary
+  `9092dee14559b9822242fcb297216cd1b7130ec332d5108addd560cbd3aecaaf`.
+  The 257 shared unavailable fixtures remained separate, with no new gap,
   mismatch, trace mismatch, overuse, or integrity error.
 - `artifacts/fastbed-internal-cache-embedded-e2e-20261018-02`: four real-process
   runs and 512 exact responses. Default mode made one upstream request per
@@ -49,17 +51,21 @@ The retained 2026-10-18 evidence in the original checkout records:
 - `artifacts/fastbed-embedded-crawler-contract-20261018-02`: 3,721 of 3,721
   crawler cases passed. The ASan/UBSan/LSan companion run also passed all 3,721
   cases without a sanitizer finding.
-- `artifacts/fastbed-cli-release-linkage-e2e-20261018-06`: the host-native
+- `artifacts/fastbed-cli-release-linkage-e2e-20261018-07`: the host-native
   binary SHA-256 is
   `a244404a4845f819eeb3d418566e70e717ed710e2a6e352921bf10afa207afc3`;
   release options, strings, static-link checks, the default-prefix build, and a
   dynamic-curl negative control passed.
-- `artifacts/fastbed-embedded-static-container-amd64-20261018-03`: 48 container
-  checks passed for image
-  `sha256:4663cd347812544141b6ecb77cb170f6b9fc9b19313f768c4f9120d889aeb8a2`.
-- `artifacts/fastbed-embedded-static-sbom-amd64-20261018-04`: official schemas,
+- `artifacts/fastbed-scratch-static-container-amd64-20261018-03`: 58 container
+  and ELF checks passed for the 9.8 MB scratch image
+  `sha256:4f69372a80a6467a757a211ce740589288b96a9ff2c3348be39148a4f458af16`.
+- `artifacts/fastbed-scratch-static-sbom-amd64-20261018-04`: official schemas,
   double-generation reproducibility, receipt binding, the unknown-version
-  negative control, and LGPL relinking passed.
+  negative control, static PCRE2 inventory, and LGPL relinking passed.
+- `artifacts/fastbed-scratch-live-canary-20261018-01`: 29 checks passed through
+  the exact scratch image against live Facebook. Photo, reel, and permalink
+  routes all returned cacheable parsed embeds; health ended with three requests
+  and zero errors.
 
 The full offline replay uses a verification build because production omits the
 replay ports and file overrides. Release-specific E2Es separately exercise the
@@ -91,5 +97,15 @@ runtime evidence.
   affinity, and host-noise gates pass.
 - Building or pushing an image is not deployment proof. Record the running
   image ID and a live health or schema check separately.
-- Fastbed still needs an owner-selected project license before public
-  distribution.
+- Fastbed's public visibility grants no reuse permission. An owner-selected
+  project license is still required to state redistribution and modification
+  terms.
+
+## Published package automation
+
+`.github/workflows/docker-build.yml` mirrors Facebed's GHCR publication path.
+Each push to `main` publishes `ghcr.io/facebed/fastbed:main` and `:latest`, then
+pulls the immutable digest and exercises the locked-down container, health
+endpoint, embedded assets, redirect behavior, and graceful exit. The workflow
+publishes an x86-64-v3, fully static scratch image for amd64 only until arm64
+completes its separate release gates.

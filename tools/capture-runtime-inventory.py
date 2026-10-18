@@ -2,10 +2,11 @@
 """Capture only non-secret package and binary identity from a fresh image.
 
 The command deliberately does not inspect image configuration, environment
-variables, filesystem trees, layers, or a running service. It reads Alpine's
-installed-package database and a fixed allowlist of production evidence from
-an ephemeral, network-disabled container. The post-link receipt is parsed as
-data and is never executed.
+variables, filesystem trees, layers, or a running service. It reads the fixed
+scratch-runtime manifest, the build-package provenance for bytes copied or
+linked into that runtime, and a fixed allowlist of production evidence from an
+ephemeral, network-disabled container. The post-link receipt is parsed as data
+and is never executed.
 """
 
 from __future__ import annotations
@@ -22,6 +23,9 @@ from pathlib import Path
 
 REQUIRED_FILES = (
     "/usr/local/bin/fastbed",
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt",
+    "/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES",
     "/usr/local/share/fastbed/BUILD-RECEIPT.json",
     "/usr/local/share/fastbed/EMBEDDED-RESOURCES.json",
     "/usr/local/share/fastbed-curl-impersonate/BUILD-MANIFEST.txt",
@@ -54,13 +58,16 @@ REQUIRED_FILES = (
     "/usr/local/share/fastbed-static-deps/SOURCE-OFFER.txt",
     "/usr/local/share/fastbed-static-deps/licenses/libmicrohttpd-COPYING",
     "/usr/local/share/fastbed-static-deps/licenses/libyaml-License",
+    "/usr/local/share/fastbed-static-deps/licenses/pcre2-COPYING",
     "/usr/local/share/fastbed-static-deps/rebuild/tools/build-static-deps.sh",
     "/usr/share/licenses/fastbed/yyjson-LICENSE",
     "/usr/share/licenses/fastbed/crawler-user-agents-LICENSE",
     "/usr/share/licenses/libmicrohttpd/COPYING",
     "/usr/share/licenses/libyaml/License",
+    "/usr/share/licenses/pcre2/COPYING",
     "/usr/local/share/fastbed-source-offers/libmicrohttpd-1.0.10.tar.gz",
     "/usr/local/share/fastbed-source-offers/yaml-0.2.5.tar.gz",
+    "/usr/local/share/fastbed-source-offers/pcre2-10.47.tar.bz2",
 )
 REQUIRED_FIELDS = {
     "P": "name",
@@ -126,6 +133,18 @@ def parse_apk_database(raw: str) -> list[dict[str, str]]:
     return packages
 
 
+def parse_manifest(raw: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for number, line in enumerate(raw.splitlines(), 1):
+        if not line or "=" not in line:
+            raise InventoryError(f"malformed runtime manifest line {number}")
+        key, value = line.split("=", 1)
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", key) or not value or key in values:
+            raise InventoryError(f"malformed runtime manifest line {number}")
+        values[key] = value
+    return values
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -169,9 +188,8 @@ def capture(engine: str, image: str, expected_alpine: str) -> dict[str, object]:
             engine,
             "create",
             "--network=none",
-            "--entrypoint",
-            "/bin/true",
             image_id,
+            "--version",
         ]
     ).strip()
     if not re.fullmatch(r"[0-9a-f]{12,64}", container_id):
@@ -179,9 +197,11 @@ def capture(engine: str, image: str, expected_alpine: str) -> dict[str, object]:
     try:
         with tempfile.TemporaryDirectory(prefix="fastbed-runtime-inventory.") as temporary:
             temporary_path = Path(temporary)
-            apk_path = temporary_path / "apk-installed"
+            apk_path = temporary_path / "build-packages"
             copy_from_image(
-                engine, container_id, "/lib/apk/db/installed", apk_path
+                engine, container_id,
+                "/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES",
+                apk_path,
             )
             apk_database = apk_path.read_text(encoding="utf-8")
             packages = parse_apk_database(apk_database)
@@ -190,6 +210,9 @@ def capture(engine: str, image: str, expected_alpine: str) -> dict[str, object]:
             receipt_digest: str | None = None
             embedded_document: dict[str, object] | None = None
             embedded_digest: str | None = None
+            runtime_manifest: dict[str, str] | None = None
+            runtime_manifest_digest: str | None = None
+            ca_bundle_digest: str | None = None
             for index, runtime_path in enumerate(REQUIRED_FILES):
                 local_path = temporary_path / f"evidence-{index:03d}"
                 copy_from_image(engine, container_id, runtime_path, local_path)
@@ -220,19 +243,31 @@ def capture(engine: str, image: str, expected_alpine: str) -> dict[str, object]:
                             "embedded resource manifest is not an object")
                     embedded_document = parsed
                     embedded_digest = file_digest
+                if runtime_path == "/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt":
+                    runtime_manifest = parse_manifest(
+                        local_path.read_text(encoding="utf-8")
+                    )
+                    runtime_manifest_digest = file_digest
+                if runtime_path == "/etc/ssl/certs/ca-certificates.crt":
+                    ca_bundle_digest = file_digest
     finally:
         run([engine, "rm", container_id])
 
-    by_name = {package["name"]: package for package in packages}
-    alpine_release = by_name.get("alpine-release")
-    if alpine_release is None:
-        raise InventoryError("runtime has no alpine-release package")
-    expected_version = f"{expected_alpine}-r0"
-    if alpine_release["version"] != expected_version:
+    if runtime_manifest is None or runtime_manifest_digest is None:
+        raise InventoryError("scratch runtime manifest was not captured")
+    if runtime_manifest.get("profile") != "fastbed-scratch-static-v1":
         raise InventoryError(
-            "Alpine release mismatch: "
-            f"expected {expected_version}, got {alpine_release['version']}"
+            f"unexpected runtime profile: {runtime_manifest.get('profile')!r}"
         )
+    if runtime_manifest.get("target_arch") != image_architecture:
+        raise InventoryError("scratch runtime architecture differs from image")
+    base_image = runtime_manifest.get("base_image", "")
+    if not base_image.startswith(f"alpine:{expected_alpine}@sha256:"):
+        raise InventoryError(
+            f"scratch build base mismatch: expected Alpine {expected_alpine}, got {base_image!r}"
+        )
+    if ca_bundle_digest is None or runtime_manifest.get("ca_bundle_sha256") != ca_bundle_digest:
+        raise InventoryError("scratch CA bundle differs from runtime manifest")
 
     if receipt_document is None or receipt_digest is None:
         raise InventoryError("runtime build receipt was not captured")
@@ -244,6 +279,14 @@ def capture(engine: str, image: str, expected_alpine: str) -> dict[str, object]:
         "image_id": image_id,
         "image_architecture": image_architecture,
         "image_reference": image,
+        "runtime": {
+            "kind": "scratch-static",
+            "profile": runtime_manifest["profile"],
+            "manifest_path": "/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt",
+            "manifest_sha256": runtime_manifest_digest,
+            "base_image": base_image,
+            "ca_bundle_sha256": ca_bundle_digest,
+        },
         "build_receipt": {
             "path": "/usr/local/share/fastbed/BUILD-RECEIPT.json",
             "sha256": receipt_digest,

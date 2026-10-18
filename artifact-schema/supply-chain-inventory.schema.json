@@ -51,15 +51,15 @@
         },
         "libraries": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 3,
+          "maxItems": 3,
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^lib/.+\\.a$" }
         },
         "source_archives": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 3,
+          "maxItems": 3,
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^source/static-deps/.+" }
         }

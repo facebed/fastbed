@@ -3,14 +3,14 @@
   "schema_version": 1,
   "document_created": "2026-10-18T00:00:00Z",
   "release_status": "production-candidate-project-license-noassertion",
-  "release_reason": "The curl 8.23 HTTP/2-only dependency closure and post-link evidence are production-integrated; Fastbed's project license remains NOASSERTION and must be chosen before external distribution.",
+  "release_reason": "The curl 8.23 HTTP/2-only dependency closure and post-link evidence are production-integrated; Fastbed's project license remains NOASSERTION, so publication grants no unstated reuse license.",
   "product": {
     "id": "fastbed",
     "name": "fastbed",
     "version": "0.1.0",
     "bom_ref": "pkg:generic/fastbed@0.1.0",
     "purl": "pkg:generic/fastbed@0.1.0",
-    "source_url": "urn:fastbed:source-tree",
+    "source_url": "https://github.com/facebed/fastbed",
     "license": "NOASSERTION",
     "source_paths": [
       "CMakeLists.txt",
@@ -111,7 +111,7 @@
         "sha256": "7399547209438c93f9b90297954698773d4846cea44cde5ca982c84c45952a3b"
       },
       "runtime_evidence": [
-        { "path": "/usr/local/share/fastbed-static-deps/SOURCE-OFFER.txt", "sha256": "75c9e6dcfde6ed077ae88a41f44bb298486b09a741c8bc58b6e0e46085c60bb3" },
+        { "path": "/usr/local/share/fastbed-static-deps/SOURCE-OFFER.txt", "sha256": "670ba5589f7e94d68037b266fcb1299ef4c591fdde4ae36d002333dfa26d836d" },
         { "path": "/usr/local/share/fastbed-source-offers/libmicrohttpd-1.0.10.tar.gz", "sha256": "04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685" }
       ]
     },
@@ -145,23 +145,57 @@
       "runtime_evidence": [
         { "path": "/usr/local/share/fastbed-source-offers/yaml-0.2.5.tar.gz", "sha256": "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4" }
       ]
+    },
+    {
+      "id": "pcre2",
+      "name": "PCRE2",
+      "version": "10.47",
+      "type": "library",
+      "bom_ref": "pkg:github/PCRE2Project/pcre2@10.47",
+      "purl": "pkg:github/PCRE2Project/pcre2@10.47",
+      "source_url": "https://github.com/PCRE2Project/pcre2/tree/pcre2-10.47",
+      "download_url": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2",
+      "source_sha256": "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7",
+      "license": "BSD-3-Clause",
+      "security_disposition": "no-named-finding-in-this-vex",
+      "description": "Built with Unicode and JIT support from the pinned upstream source archive and statically embedded in Fastbed.",
+      "local_files": [],
+      "declaration_evidence": {
+        "path": "tools/build-static-deps.sh",
+        "literals": [
+          "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2",
+          "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7",
+          "--enable-jit",
+          "--disable-shared"
+        ]
+      },
+      "runtime_license": {
+        "path": "/usr/share/licenses/pcre2/COPYING",
+        "sha256": "99272c55f3dcfa07a8a7e15a5c1a33096e4727de74241d65fa049fccfdd59507"
+      },
+      "runtime_evidence": [
+        { "path": "/usr/local/share/fastbed-source-offers/pcre2-10.47.tar.bz2", "sha256": "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7" }
+      ]
     }
   ],
   "static_deps_bundle": {
     "metadata_relative_path": "share/fastbed-static-deps",
     "manifest_expectations": {
-      "profile": "fastbed-static-deps-v1",
+      "profile": "fastbed-static-deps-v2",
       "source_date_epoch": "1774606016",
       "libmicrohttpd_version": "1.0.10",
       "libmicrohttpd_source_sha256": "04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685",
       "libyaml_version": "0.2.5",
       "libyaml_source_sha256": "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4",
-      "builder_sha256": "b7cd7ddc7abff4b6d2b1b4d2fde7040e2236a98d09347bb3886d1706a19b4d26"
+      "pcre2_version": "10.47",
+      "pcre2_source_sha256": "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7",
+      "builder_sha256": "25db65c423fe30bab8785f7e1a4177e925006e5a0a67c223e44c91de535c0349"
     },
-    "libraries": ["lib/libmicrohttpd.a", "lib/libyaml.a"],
+    "libraries": ["lib/libmicrohttpd.a", "lib/libyaml.a", "lib/libpcre2-8.a"],
     "source_archives": [
       "source/static-deps/libmicrohttpd-1.0.10.tar.gz",
-      "source/static-deps/yaml-0.2.5.tar.gz"
+      "source/static-deps/yaml-0.2.5.tar.gz",
+      "source/static-deps/pcre2-10.47.tar.bz2"
     ]
   },
   "curl_bundle": {
@@ -284,8 +318,8 @@
       "purpose": "Content-addressed native source builder that verifies archives, applies patches, probes impersonation behavior, and emits the complete checksum closure.", "manifest_hash_key": "builder_sha256", "runtime_relative_path": "rebuild/tools/build-curl-impersonate.sh"
     },
     {
-      "id": "static-deps-source-builder", "component": "libmicrohttpd", "path": "tools/build-static-deps.sh", "sha256": "b7cd7ddc7abff4b6d2b1b4d2fde7040e2236a98d09347bb3886d1706a19b4d26",
-      "purpose": "Content-addressed native builder for statically embedded libmicrohttpd and libyaml.", "manifest_hash_key": "builder_sha256", "runtime_relative_path": "rebuild/tools/build-static-deps.sh"
+      "id": "static-deps-source-builder", "component": "libmicrohttpd", "path": "tools/build-static-deps.sh", "sha256": "25db65c423fe30bab8785f7e1a4177e925006e5a0a67c223e44c91de535c0349",
+      "purpose": "Content-addressed native builder for statically embedded libmicrohttpd, libyaml, and PCRE2.", "manifest_hash_key": "builder_sha256", "runtime_relative_path": "rebuild/tools/build-static-deps.sh"
     }
   ],
   "patches": [
@@ -317,10 +351,10 @@
     }
   ],
   "relationships": [
-    { "from": "fastbed", "to": "yyjson" }, { "from": "fastbed", "to": "crawler-user-agents" }, { "from": "fastbed", "to": "libmicrohttpd" }, { "from": "fastbed", "to": "libyaml" }, { "from": "fastbed", "to": "curl-impersonate" },
-    { "from": "fastbed", "to": "runtime:pcre2" }, { "from": "fastbed", "to": "runtime:musl" }, { "from": "fastbed", "to": "runtime:libgcc" }, { "from": "fastbed", "to": "runtime:libstdc++" }, { "from": "fastbed", "to": "runtime:ca-certificates-bundle" }, { "from": "fastbed", "to": "runtime:busybox" },
+    { "from": "fastbed", "to": "yyjson" }, { "from": "fastbed", "to": "crawler-user-agents" }, { "from": "fastbed", "to": "libmicrohttpd" }, { "from": "fastbed", "to": "libyaml" }, { "from": "fastbed", "to": "pcre2" }, { "from": "fastbed", "to": "curl-impersonate" },
+    { "from": "fastbed", "to": "runtime:musl" }, { "from": "fastbed", "to": "runtime:libgcc" }, { "from": "fastbed", "to": "runtime:libstdc++" }, { "from": "fastbed", "to": "runtime:ca-certificates" }, { "from": "fastbed", "to": "runtime:ca-certificates-bundle" },
     { "from": "libmicrohttpd", "to": "runtime:musl" }, { "from": "curl-impersonate", "to": "curl" }, { "from": "curl-impersonate", "to": "runtime:libstdc++" }, { "from": "curl-impersonate", "to": "runtime:libgcc" },
     { "from": "curl", "to": "boringssl" }, { "from": "curl", "to": "brotli" }, { "from": "curl", "to": "nghttp2" }, { "from": "curl", "to": "zlib-static" }, { "from": "curl", "to": "zstd" }, { "from": "curl", "to": "libidn2" }, { "from": "curl", "to": "runtime:musl" }, { "from": "libidn2", "to": "libunistring" }
   ],
-  "required_runtime_packages": ["alpine-release", "busybox", "ca-certificates", "ca-certificates-bundle", "libgcc", "libstdc++", "musl", "pcre2"]
+  "required_runtime_packages": ["ca-certificates", "ca-certificates-bundle", "libgcc", "libstdc++", "musl"]
 }

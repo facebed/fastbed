@@ -9,27 +9,26 @@ policy.
 
 ```sh
 docker run --rm \
-  --user fastbed:fastbed \
+  --user 65532:65532 \
   --read-only \
   --cap-drop ALL \
   --security-opt no-new-privileges:true \
   --pids-limit 64 \
   --ulimit core=0:0 \
   --stop-timeout 90 \
-  --env FASTBED_HEALTH_PORT=9812 \
   -p 9812:9812 \
-  fastbed:latest --workers 16
+  ghcr.io/facebed/fastbed:latest --workers 16
 ```
 
 The example fixes the application at 16 workers so its PID budget is
-meaningful. The pinned curl build uses a threaded asynchronous resolver, so a
+meaningful. The statically linked curl build uses a threaded asynchronous resolver, so a
 busy process can have approximately one resolver thread per application
 worker in addition to the application workers, two HTTP I/O threads, the main
-thread, deadline/notifier/watchdog threads, and a health-check process. Size a
+thread, and deadline/notifier/watchdog threads. Size a
 deployment's limit as at least `2 * workers + safety margin`; `64` is a
 conservative limit for the 16-worker example. Do not reuse `64` with the
 maximum 256-worker setting. Measure the chosen workload and leave enough room
-for shutdown and health checks without allowing unbounded process creation.
+for shutdown without allowing unbounded process creation.
 
 Fastbed has been exercised with a read-only root filesystem, all Linux
 capabilities dropped, `no-new-privileges`, and the container runtime's default
@@ -37,12 +36,11 @@ seccomp filter. It needs no writable filesystem or capability when listening
 on its default unprivileged port. Do not run it with `--privileged`, add
 capabilities, or disable seccomp. Mount configuration and secrets read-only.
 
-The image health check reads `FASTBED_HEALTH_PORT`, which defaults to `9812`.
-If the YAML configuration changes the listening port, set
-`FASTBED_HEALTH_PORT` to exactly the same value; otherwise the healthy service
-will correctly run on its configured port while Docker probes the wrong port
-and marks the container unhealthy. The health client explicitly disables
-proxy use, so injected `http_proxy` settings cannot divert the loopback probe.
+The scratch image intentionally contains no shell or HTTP client and therefore
+defines no Dockerfile `HEALTHCHECK`. Configure the orchestrator to probe
+`/healthz` directly on the same port as Fastbed. Keep that probe outside the
+container; adding BusyBox or curl only for health checks would weaken the
+scratch boundary.
 
 Fastbed handles `SIGINT` and `SIGTERM` synchronously. Once either signal is
 received, it arms a monotonic 75-second hard watchdog, stops accepting work,
@@ -65,15 +63,13 @@ a stuck process before the supervisor sends `SIGKILL`. For Docker Compose use:
 ```yaml
 services:
   fastbed:
-    image: fastbed:latest
-    user: fastbed:fastbed
+    image: ghcr.io/facebed/fastbed:latest
+    user: "65532:65532"
     read_only: true
     cap_drop: ["ALL"]
     security_opt:
       - no-new-privileges:true
     pids_limit: 64
-    environment:
-      FASTBED_HEALTH_PORT: "9812"
     command: ["--workers", "16"]
     stop_grace_period: 90s
     ulimits:
@@ -98,11 +94,11 @@ securityContext:
 ```
 
 Use a native HTTP readiness/liveness probe for `/healthz` on the same named or
-numeric port as the Fastbed configuration; Kubernetes does not use the image's
-Docker health check as a substitute for Pod probes. Enforce a suitably scaled
-PID limit through the container runtime or kubelet policy. Do not set a
-supervisor timeout equal to 75 seconds: scheduling and signal-delivery latency
-would race the internal watchdog.
+numeric port as the Fastbed configuration. The image deliberately provides no
+in-container Docker health command. Enforce a suitably scaled PID limit through
+the container runtime or kubelet policy. Do not set a supervisor timeout equal
+to 75 seconds: scheduling and signal-delivery latency would race the internal
+watchdog.
 
 The core limit is visible in `/proc/PID/limits`. `PR_SET_DUMPABLE=0` also denies
 same-UID access to dump-sensitive `/proc/PID` files such as `mem`; use those

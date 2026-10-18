@@ -91,14 +91,14 @@
         "build_manifest_sha256": { "$ref": "#/$defs/sha256" },
         "libraries": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 3,
+          "maxItems": 3,
           "items": { "$ref": "#/$defs/fileDigest" }
         },
         "source_archives": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 3,
+          "maxItems": 3,
           "items": { "$ref": "#/$defs/fileDigest" }
         }
       }

@@ -22,6 +22,9 @@ option(FASTBED_X86_64_V3 "Build an x86-64-v3 deployment binary" OFF)
 option(FASTBED_USE_LLD "Link with LLVM lld" OFF)
 option(FASTBED_PACK_RELR
     "Pack relative ELF relocations (requires a DT_RELR-capable runtime)" OFF)
+option(FASTBED_FULLY_STATIC
+    "Produce a scratch-compatible ELF with no interpreter or DT_NEEDED entries"
+    OFF)
 option(FASTBED_BOLT_READY "Retain relocations for post-link BOLT optimization" OFF)
 option(FASTBED_JEMALLOC "Link jemalloc for an allocator A/B build" OFF)
 option(FASTBED_VERIFICATION_BUILD
@@ -46,7 +49,7 @@ set(FASTBED_CURL_IMPERSONATE_ROOT "" CACHE PATH
 set(FASTBED_CURL_IMPERSONATE_ARCHIVE "" CACHE FILEPATH
     "Vulnerable v1.5.2 mega-archive for offline/control comparisons only")
 set(FASTBED_STATIC_DEPS_ROOT "" CACHE PATH
-    "Verified native prefix containing static libmicrohttpd and libyaml archives")
+    "Verified native prefix containing static libmicrohttpd, libyaml, and optional PCRE2 archives")
 
 if(FASTBED_CURL_IMPERSONATE_ROOT AND FASTBED_CURL_IMPERSONATE_ARCHIVE)
     message(FATAL_ERROR
@@ -77,6 +80,21 @@ endif()
 
 if(FASTBED_NATIVE AND FASTBED_X86_64_V3)
     message(FATAL_ERROR "FASTBED_NATIVE and FASTBED_X86_64_V3 are mutually exclusive")
+endif()
+if(FASTBED_FULLY_STATIC AND NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR "FASTBED_FULLY_STATIC currently supports Linux only")
+endif()
+if(FASTBED_FULLY_STATIC AND FASTBED_PACK_RELR)
+    message(FATAL_ERROR
+        "FASTBED_PACK_RELR is a dynamic-relocation optimization and cannot be combined with FASTBED_FULLY_STATIC")
+endif()
+if(FASTBED_FULLY_STATIC AND FASTBED_ALLOW_DYNAMIC_SYSTEM_CURL)
+    message(FATAL_ERROR
+        "FASTBED_FULLY_STATIC cannot use dynamic system curl")
+endif()
+if(FASTBED_FULLY_STATIC AND FASTBED_JEMALLOC)
+    message(FATAL_ERROR
+        "FASTBED_FULLY_STATIC has no verified static jemalloc profile")
 endif()
 string(TOUPPER "${FASTBED_CLANG_PGO_GENERATE_MODE}"
        fastbed_clang_pgo_generate_mode)
@@ -118,7 +136,9 @@ check_c_source_compiles(
     "#ifndef _FORTIFY_SOURCE\n#error toolchain has no default fortify level\n#endif\nint main(void) { return _FORTIFY_SOURCE < 1; }"
     FASTBED_TOOLCHAIN_HAS_DEFAULT_FORTIFY)
 set(CMAKE_REQUIRED_FLAGS "${fastbed_saved_required_flags}")
-pkg_check_modules(PCRE2 REQUIRED IMPORTED_TARGET "libpcre2-8>=10.34")
+if(NOT FASTBED_FULLY_STATIC)
+    pkg_check_modules(PCRE2 REQUIRED IMPORTED_TARGET "libpcre2-8>=10.34")
+endif()
 if(NOT FASTBED_CURL_IMPERSONATE_ROOT)
     find_package(ZLIB 1.2.11 REQUIRED)
     find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS Crypto)
@@ -142,10 +162,25 @@ foreach(fastbed_static_metadata IN ITEMS
 endforeach()
 file(STRINGS "${fastbed_static_deps_manifest}"
      fastbed_static_deps_manifest_lines)
-foreach(fastbed_static_required_manifest_line IN ITEMS
-        "profile=fastbed-static-deps-v1"
-        "libmicrohttpd_version=1.0.10"
-        "libyaml_version=0.2.5")
+set(fastbed_static_required_manifest_lines
+    "libmicrohttpd_version=1.0.10"
+    "libyaml_version=0.2.5")
+if(FASTBED_FULLY_STATIC)
+    list(APPEND fastbed_static_required_manifest_lines
+        "profile=fastbed-static-deps-v2"
+        "pcre2_version=10.47")
+else()
+    set(fastbed_static_profile_lines ${fastbed_static_deps_manifest_lines})
+    list(FILTER fastbed_static_profile_lines INCLUDE REGEX
+         "^profile=fastbed-static-deps-v[12]$")
+    list(LENGTH fastbed_static_profile_lines fastbed_static_profile_count)
+    if(NOT fastbed_static_profile_count EQUAL 1)
+        message(FATAL_ERROR
+            "Static dependency manifest must contain one supported profile")
+    endif()
+endif()
+foreach(fastbed_static_required_manifest_line IN LISTS
+        fastbed_static_required_manifest_lines)
     list(FIND fastbed_static_deps_manifest_lines
          "${fastbed_static_required_manifest_line}"
          fastbed_static_manifest_line_index)
@@ -157,12 +192,21 @@ endforeach()
 set(fastbed_static_deps_libraries
     "${FASTBED_STATIC_DEPS_ROOT}/lib/libmicrohttpd.a"
     "${FASTBED_STATIC_DEPS_ROOT}/lib/libyaml.a")
+if(FASTBED_FULLY_STATIC)
+    list(APPEND fastbed_static_deps_libraries
+        "${FASTBED_STATIC_DEPS_ROOT}/lib/libpcre2-8.a")
+endif()
 set(fastbed_static_deps_integrity_paths
     "include/microhttpd.h"
     "include/yaml.h"
     "lib/libmicrohttpd.a"
     "lib/libyaml.a"
     "share/fastbed-static-deps/BUILD-MANIFEST.txt")
+if(FASTBED_FULLY_STATIC)
+    list(APPEND fastbed_static_deps_integrity_paths
+        "include/pcre2.h"
+        "lib/libpcre2-8.a")
+endif()
 file(STRINGS "${fastbed_static_deps_checksums}"
      fastbed_static_deps_checksum_lines)
 foreach(fastbed_static_integrity_path IN LISTS
@@ -268,8 +312,12 @@ set(FASTBED_SOURCES
 
 add_executable(fastbed ${FASTBED_SOURCES})
 add_dependencies(fastbed fastbed_embedded_resources)
-check_pie_supported()
-set_property(TARGET fastbed PROPERTY POSITION_INDEPENDENT_CODE ON)
+if(FASTBED_FULLY_STATIC)
+    target_compile_options(fastbed PRIVATE -fPIE)
+else()
+    check_pie_supported()
+    set_property(TARGET fastbed PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
 target_include_directories(fastbed PRIVATE
     include
     "${fastbed_generated_root}/include")
@@ -278,11 +326,18 @@ target_include_directories(fastbed SYSTEM BEFORE PRIVATE
 target_link_libraries(fastbed PRIVATE
     fastbed_yyjson
     ${fastbed_static_deps_libraries}
-    PkgConfig::PCRE2
     Threads::Threads
 )
-message(STATUS
-    "Using verified static libmicrohttpd/libyaml prefix from ${FASTBED_STATIC_DEPS_ROOT}")
+if(NOT FASTBED_FULLY_STATIC)
+    target_link_libraries(fastbed PRIVATE PkgConfig::PCRE2)
+endif()
+if(FASTBED_FULLY_STATIC)
+    message(STATUS
+        "Using verified static libmicrohttpd/libyaml/PCRE2 prefix from ${FASTBED_STATIC_DEPS_ROOT}")
+else()
+    message(STATUS
+        "Using verified static libmicrohttpd/libyaml prefix from ${FASTBED_STATIC_DEPS_ROOT}")
+endif()
 if(FASTBED_JEMALLOC)
     target_link_libraries(fastbed PRIVATE PkgConfig::JEMALLOC)
     target_compile_definitions(fastbed PRIVATE FASTBED_JEMALLOC=1)
@@ -461,6 +516,7 @@ if(FASTBED_CURL_IMPERSONATE_ROOT OR FASTBED_CURL_IMPERSONATE_ARCHIVE)
             "-DFASTBED_BINARY=$<TARGET_FILE:fastbed>"
             "-DFASTBED_READELF=${CMAKE_READELF}"
             "-DFASTBED_NM=${CMAKE_NM}"
+            "-DFASTBED_REQUIRE_FULLY_STATIC=${FASTBED_FULLY_STATIC}"
             "-DFASTBED_LINKAGE_REPORT=${CMAKE_CURRENT_BINARY_DIR}/fastbed-linkage-report.txt"
             -P "${fastbed_linkage_verifier}"
         COMMENT "Verifying bundled dependencies are statically embedded"
@@ -513,11 +569,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         $<$<CONFIG:Release>:-Wl,--gc-sections>
         $<$<CONFIG:Release>:-Wl,-O2>
         $<$<CONFIG:Release>:-Wl,--as-needed>
-        $<$<CONFIG:Release>:-Wl,-z,relro>
-        $<$<CONFIG:Release>:-Wl,-z,now>
         $<$<CONFIG:Release>:-Wl,-z,noexecstack>
         $<$<CONFIG:Release>:-Wl,--build-id=sha1>
     )
+endif()
+
+if(FASTBED_FULLY_STATIC)
+    target_link_options(fastbed PRIVATE -static-pie)
+else()
+    target_link_options(fastbed PRIVATE
+        $<$<CONFIG:Release>:-Wl,-z,relro>
+        $<$<CONFIG:Release>:-Wl,-z,now>)
 endif()
 
 if(FASTBED_PACK_RELR)

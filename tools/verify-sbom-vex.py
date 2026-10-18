@@ -47,7 +47,11 @@ LINKED_CURL_LIBRARIES = [
     "lib/libbrotlicommon.a",
     "lib/libz.a",
 ]
-LINKED_STATIC_DEPS_LIBRARIES = ["lib/libmicrohttpd.a", "lib/libyaml.a"]
+LINKED_STATIC_DEPS_LIBRARIES = [
+    "lib/libmicrohttpd.a",
+    "lib/libyaml.a",
+    "lib/libpcre2-8.a",
+]
 LGPL_RELINK_LIBRARIES = [
     "curl-prefix/lib/libidn2.a",
     "curl-prefix/lib/libunistring.a",
@@ -592,6 +596,17 @@ def runtime_purl(package: dict[str, str], alpine_version: str) -> str:
     return f"pkg:apk/alpine/{name}@{version}?{qualifiers}"
 
 
+def runtime_alpine_version(runtime: dict[str, Any]) -> str:
+    profile = runtime.get("runtime")
+    if not isinstance(profile, dict):
+        raise VerificationError("runtime profile is missing")
+    base_image = profile.get("base_image", "")
+    match = re.fullmatch(r"alpine:([^@]+)@sha256:[0-9a-f]{64}", base_image)
+    if not match:
+        raise VerificationError("runtime base image is not pinned Alpine")
+    return match.group(1)
+
+
 def verify_spdx_bindings(
     spdx: dict[str, Any], inventory: dict[str, Any], runtime: dict[str, Any]
 ) -> None:
@@ -644,7 +659,7 @@ def verify_spdx_bindings(
             or checksum_of(package, "SHA256") != expected["source_sha256"]
         ):
             raise VerificationError(f"SPDX declared component mismatch: {expected['id']}")
-    alpine_version = runtime_packages["alpine-release"]["version"].removesuffix("-r0")
+    alpine_version = runtime_alpine_version(runtime)
     for name, expected in runtime_packages.items():
         package = packages[expected_spdx_id(f"runtime:{name}")]
         if (
@@ -1011,6 +1026,7 @@ def verify_build_receipt(
     for key, relative in {
         "libmicrohttpd_archive_sha256": "lib/libmicrohttpd.a",
         "libyaml_archive_sha256": "lib/libyaml.a",
+        "pcre2_archive_sha256": "lib/libpcre2-8.a",
     }.items():
         if static_manifest.get(key) != static_sums[relative]:
             raise VerificationError(
@@ -1316,13 +1332,13 @@ def verify_inventory_bindings(
             raise VerificationError(
                 f"CycloneDX declared component mismatch: {expected['id']}"
             )
-        if expected["id"] in {"libmicrohttpd", "libyaml"} and (
+        if expected["id"] in {"libmicrohttpd", "libyaml", "pcre2"} and (
             properties.get("fastbed:linkage") != "static"
         ):
             raise VerificationError(
                 f"CycloneDX {expected['id']} linkage mismatch")
     runtime_by_name = {item["name"]: item for item in runtime["packages"]}
-    alpine_version = runtime_by_name["alpine-release"]["version"].removesuffix("-r0")
+    alpine_version = runtime_alpine_version(runtime)
     for name, expected in runtime_by_name.items():
         actual = components[f"runtime:{name}"]
         properties = property_map(actual)

@@ -7,6 +7,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import http.client
+import io
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 import uuid
@@ -84,19 +86,29 @@ def http_get(port: int, path: str) -> tuple[int, dict[str, str], bytes]:
         connection.close()
 
 
-def wait_healthy(engine: str, name: str, deadline: float) -> dict[str, Any]:
+def wait_ready(
+    engine: str, name: str, deadline: float
+) -> tuple[dict[str, Any], int]:
     last = "not inspected"
     while time.monotonic() < deadline:
         record = inspect(engine, name)
         state = record.get("State", {})
-        health = state.get("Health", {})
-        last = f"running={state.get('Running')} health={health.get('Status')}"
+        bindings = record.get("NetworkSettings", {}).get("Ports", {}).get(
+            "9812/tcp"
+        )
+        last = f"running={state.get('Running')} bindings={bindings!r}"
         if not state.get("Running"):
             raise RuntimeError(f"container exited before readiness: {last}")
-        if health.get("Status") == "healthy":
-            return record
+        if isinstance(bindings, list) and len(bindings) == 1:
+            try:
+                port = int(bindings[0]["HostPort"])
+                status, _, body = http_get(port, "/healthz")
+                if status == 200 and json.loads(body).get("status") == "ok":
+                    return record, port
+            except (KeyError, ValueError, OSError, json.JSONDecodeError):
+                pass
         time.sleep(0.1)
-    raise RuntimeError(f"container health deadline expired: {last}")
+    raise RuntimeError(f"container readiness deadline expired: {last}")
 
 
 def parse_status(text: str) -> dict[str, str]:
@@ -174,8 +186,6 @@ def main() -> int:
             "--detach",
             "--name",
             container_name,
-            "--user",
-            "fastbed:fastbed",
             "--read-only",
             "--cap-drop",
             "ALL",
@@ -187,8 +197,6 @@ def main() -> int:
             "core=0:0",
             "--stop-timeout",
             "90",
-            "--env",
-            "FASTBED_HEALTH_PORT=9812",
             "--publish",
             "127.0.0.1::9812",
             args.image,
@@ -199,14 +207,16 @@ def main() -> int:
         container_created = True
         require("container-id-shape", bool(re.fullmatch(r"[0-9a-f]{64}", cid)), "64 lowercase hex characters", cid)
 
-        running = wait_healthy(args.engine, container_name, time.monotonic() + 45.0)
+        running, host_port = wait_ready(
+            args.engine, container_name, time.monotonic() + 45.0
+        )
         write_json(work / "container-inspect-running.json", running)
         state = running["State"]
         host = running["HostConfig"]
         config = running["Config"]
 
         require("image-id-bound", running.get("Image") == image_before.get("Id"), image_before.get("Id"), running.get("Image"))
-        require("runtime-user", config.get("User") == "fastbed:fastbed", "fastbed:fastbed", config.get("User"))
+        require("runtime-user", config.get("User") == "65532:65532", "65532:65532", config.get("User"))
         require("not-privileged", host.get("Privileged") is False, False, host.get("Privileged"))
         require("read-only-root", host.get("ReadonlyRootfs") is True, True, host.get("ReadonlyRootfs"))
         require("no-binds", not host.get("Binds"), [], host.get("Binds"))
@@ -219,7 +229,7 @@ def main() -> int:
         require("pid-limit", host.get("PidsLimit") == 64, 64, host.get("PidsLimit"))
         core_limits = [value for value in host.get("Ulimits") or [] if value.get("Name") == "core"]
         require("host-core-limit", core_limits == [{"Name": "core", "Hard": 0, "Soft": 0}], [{"Name": "core", "Hard": 0, "Soft": 0}], core_limits)
-        require("docker-health", state.get("Health", {}).get("Status") == "healthy", "healthy", state.get("Health", {}).get("Status"))
+        require("no-image-health-command", not config.get("Healthcheck"), None, config.get("Healthcheck"))
 
         bindings = running.get("NetworkSettings", {}).get("Ports", {}).get("9812/tcp")
         require("single-port-binding", isinstance(bindings, list) and len(bindings) == 1, "one binding", bindings)
@@ -227,7 +237,7 @@ def main() -> int:
             raise RuntimeError("cannot determine the published health port")
         binding = bindings[0]
         require("loopback-only-binding", binding.get("HostIp") == "127.0.0.1", "127.0.0.1", binding.get("HostIp"))
-        host_port = int(binding["HostPort"])
+        require("readiness-port-stable", int(binding["HostPort"]) == host_port, host_port, binding.get("HostPort"))
 
         status, headers, body = http_get(host_port, "/healthz")
         (work / "health.body").write_bytes(body)
@@ -260,45 +270,100 @@ def main() -> int:
                 expected_body = expected_body.replace(marker, b"facebed by pi.kt")
             require(f"{stem}-body", route_body == expected_body, hashlib.sha256(expected_body).hexdigest(), hashlib.sha256(route_body).hexdigest())
 
-        uid = engine_run(["exec", container_name, "id", "-u"]).stdout.decode().strip()
-        require("effective-uid-nonzero", uid.isdigit() and int(uid) > 0, "integer > 0", uid)
+        runtime_binary = work / "runtime-fastbed"
+        runtime_manifest_path = work / "runtime-manifest.txt"
+        runtime_packages_path = work / "runtime-build-packages.txt"
+        ca_bundle_path = work / "ca-certificates.crt"
+        for runtime_path, local_path in (
+            ("/usr/local/bin/fastbed", runtime_binary),
+            ("/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt", runtime_manifest_path),
+            ("/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES", runtime_packages_path),
+            ("/etc/ssl/certs/ca-certificates.crt", ca_bundle_path),
+        ):
+            engine_run(["cp", f"{container_name}:{runtime_path}", str(local_path)])
 
-        status_text = engine_run([
-            "exec", container_name, "/bin/sh", "-c",
-            "sed -n '/^CapEff:/p;/^NoNewPrivs:/p;/^Threads:/p' /proc/1/status",
-        ]).stdout.decode("utf-8", "replace")
+        elf_header = run(["readelf", "-hW", str(runtime_binary)]).stdout.decode()
+        elf_programs = run(["readelf", "-lW", str(runtime_binary)]).stdout.decode()
+        elf_dynamic = run(["readelf", "-dW", str(runtime_binary)]).stdout.decode()
+        (work / "runtime-elf-header.txt").write_text(elf_header, encoding="utf-8")
+        (work / "runtime-elf-program-headers.txt").write_text(elf_programs, encoding="utf-8")
+        (work / "runtime-elf-dynamic.txt").write_text(elf_dynamic, encoding="utf-8")
+        require("static-pie-elf-type", "Type:                              DYN" in elf_header, "ELF ET_DYN static PIE", next((line.strip() for line in elf_header.splitlines() if "Type:" in line), "missing"))
+        require("no-elf-interpreter", "Requesting program interpreter" not in elf_programs, "no PT_INTERP", "present" if "Requesting program interpreter" in elf_programs else "absent")
+        needed = re.findall(r"Shared library: \[([^]]+)\]", elf_dynamic)
+        require("no-dt-needed", needed == [], [], needed)
+
+        archive = engine_run(["export", container_name], timeout=60.0).stdout
+        with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as rootfs:
+            rootfs_paths = sorted(
+                member.name.removeprefix("./").rstrip("/")
+                for member in rootfs.getmembers()
+                if member.name.removeprefix("./").rstrip("/")
+            )
+        write_json(work / "rootfs-paths.json", rootfs_paths)
+        rootfs_set = set(rootfs_paths)
+        for required_path in (
+            "usr/local/bin/fastbed",
+            "etc/ssl/certs/ca-certificates.crt",
+            "usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt",
+            "usr/local/share/fastbed/BUILD-RECEIPT.json",
+        ):
+            require(f"scratch-required:{required_path}", required_path in rootfs_set, True, required_path in rootfs_set)
+        forbidden_paths = sorted(
+            path for path in rootfs_paths
+            if path in {
+                "bin/sh", "bin/busybox", "lib/apk/db/installed",
+                "lib/ld-musl-x86_64.so.1", "lib64/ld-linux-x86-64.so.2",
+            }
+            or re.search(r"(^|/)[^/]+\.so(?:\.|$)", path)
+        )
+        require("scratch-no-shell-loader-or-shared-objects", forbidden_paths == [], [], forbidden_paths)
+
+        manifest_values: dict[str, str] = {}
+        for line in runtime_manifest_path.read_text(encoding="utf-8").splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                manifest_values[key] = value
+        require("scratch-runtime-profile", manifest_values.get("profile") == "fastbed-scratch-static-v1", "fastbed-scratch-static-v1", manifest_values.get("profile"))
+        require("runtime-ca-bundle-bound", manifest_values.get("ca_bundle_sha256") == sha256_file(ca_bundle_path), sha256_file(ca_bundle_path), manifest_values.get("ca_bundle_sha256"))
+        package_names = sorted(re.findall(r"^P:(.+)$", runtime_packages_path.read_text(encoding="utf-8"), re.MULTILINE))
+        expected_packages = sorted(["ca-certificates", "ca-certificates-bundle", "libgcc", "libstdc++", "musl"])
+        require("scratch-build-package-provenance", package_names == expected_packages, expected_packages, package_names)
+
+        host_pid = state.get("Pid")
+        require("host-pid", isinstance(host_pid, int) and host_pid > 0, "integer > 0", host_pid)
+        if not isinstance(host_pid, int) or host_pid <= 0:
+            raise RuntimeError("cannot inspect container process on the host")
+        status_text = Path(f"/proc/{host_pid}/status").read_text(encoding="utf-8")
         proc_status = parse_status(status_text)
+        uid_fields = proc_status.get("Uid", "").split()
+        uid = uid_fields[0] if uid_fields else ""
+        require("effective-uid", uid == "65532", "65532", uid)
         require("proc-capabilities-zero", proc_status.get("CapEff") == "0000000000000000", "0000000000000000", proc_status.get("CapEff"))
         require("proc-no-new-privileges", proc_status.get("NoNewPrivs") == "1", "1", proc_status.get("NoNewPrivs"))
 
-        limits_text = engine_run([
-            "exec", container_name, "/bin/sh", "-c",
-            "grep '^Max core file size' /proc/1/limits",
-        ]).stdout.decode("utf-8", "replace").strip()
+        limits_text = next(
+            line for line in Path(f"/proc/{host_pid}/limits").read_text(
+                encoding="utf-8"
+            ).splitlines() if line.startswith("Max core file size")
+        ).strip()
         core_match = re.fullmatch(r"Max core file size\s+(\S+)\s+(\S+)\s+(\S+)", limits_text)
         require("proc-core-limit", bool(core_match and core_match.group(1) == "0" and core_match.group(2) == "0"), "soft=0 hard=0", limits_text)
 
-        process_count_text = engine_run([
-            "exec", container_name, "/bin/sh", "-c",
-            "ls -d /proc/[0-9]* 2>/dev/null | wc -l",
-        ]).stdout.decode().strip()
-        process_count = int(process_count_text)
+        process_lines = engine_run(["top", container_name, "-eo", "pid"]).stdout.decode().splitlines()
+        process_count = max(0, len([line for line in process_lines[1:] if line.strip()]))
         require("process-budget", 1 <= process_count <= 64, "1..64", process_count)
 
-        write_probes: dict[str, int] = {}
-        for location in ("/fastbed-write-probe", "/tmp/fastbed-write-probe", "/var/tmp/fastbed-write-probe"):
-            completed = engine_run(
-                ["exec", container_name, "/bin/sh", "-c", f": > {location}"],
-                check=False,
-            )
-            write_probes[location] = completed.returncode
-            require(f"write-denied-{location}", completed.returncode != 0, "nonzero exit", completed.returncode)
-
-        mem_probe = engine_run([
-            "exec", container_name, "/bin/sh", "-c",
-            "dd if=/proc/1/mem of=/dev/null bs=1 count=1",
-        ], check=False)
-        require("same-uid-proc-mem-denied", mem_probe.returncode != 0, "nonzero exit", mem_probe.returncode)
+        mem_error = ""
+        try:
+            descriptor = os.open(f"/proc/{host_pid}/mem", os.O_RDONLY)
+        except OSError as exc:
+            mem_denied = True
+            mem_error = f"{type(exc).__name__}: {exc}"
+        else:
+            os.close(descriptor)
+            mem_denied = False
+        require("same-uid-proc-mem-denied", mem_denied, True, mem_error or "opened")
         write_json(
             work / "runtime-probes.json",
             {
@@ -306,9 +371,10 @@ def main() -> int:
                 "proc_status": proc_status,
                 "core_limit_line": limits_text,
                 "process_count": process_count,
-                "write_probe_exit_codes": write_probes,
-                "proc_mem_exit_code": mem_probe.returncode,
-                "proc_mem_stderr": mem_probe.stderr.decode("utf-8", "replace"),
+                "proc_mem_denied": mem_denied,
+                "proc_mem_error": mem_error,
+                "rootfs_path_count": len(rootfs_paths),
+                "build_package_provenance": package_names,
             },
         )
 

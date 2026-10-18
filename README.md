@@ -1,5 +1,7 @@
 # Fastbed
 
+[![Build and Push Docker Image](https://github.com/facebed/fastbed/actions/workflows/docker-build.yml/badge.svg)](https://github.com/facebed/fastbed/actions/workflows/docker-build.yml)
+
 Fastbed is a from-scratch C port of Facebed: a Facebook embed provider for
 Discord and other unfurl clients. The project targets behavioral compatibility
 with the pinned Python service while making parsing and concurrent serving
@@ -15,15 +17,19 @@ traces; it introduced no fixture gap or archive-integrity error. See
 inventory in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 
 The amd64 image also passed the fail-closed SBOM/VEX/relink gate and a 48-check
-locked-down embedded-resource container E2E. Public distribution remains gated by an
-owner-selected Fastbed project license; the evidence deliberately records the
-project license as `NOASSERTION` rather than inventing one. Arm64 remains a
-separate, uncertified target until its native image, SBOM, runtime, and
-fingerprint gates run on arm64 hardware. Do not publish an arm64 tag from the
-amd64 evidence.
+locked-down embedded-resource container E2E. The source and container are
+public, but Fastbed has no owner-selected project license. Publication grants
+no unstated reuse rights, and the evidence records the license as
+`NOASSERTION`. Arm64 remains a separate, uncertified target until its native
+image, SBOM, runtime, and fingerprint gates run on arm64 hardware. Do not
+publish an arm64 tag from the amd64 evidence.
 
 The embedded crawler database passed all 3,721 contract cases in the optimized
 build and under ASan/UBSan/LSan, with no sanitizer finding.
+
+The final scratch image also passed bounded live photo, reel, and permalink
+canaries through Facebook DNS, certificate validation, browser impersonation,
+and parsing with zero recorded errors.
 
 The verification strategy is process-level and artifact-producing. The retired
 10,659-row corpus is replayed from its frozen Python-oracle request traces and
@@ -45,6 +51,32 @@ The canonical replay command and artifact contract are documented in
 - [`docs/SUPPLY_CHAIN.md`](docs/SUPPLY_CHAIN.md) covers SBOM, VEX, source offers,
   and relinking.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) records code and evidence rules.
+
+## Container package
+
+Every push to `main` builds, publishes, and smoke-tests the amd64 image at
+`ghcr.io/facebed/fastbed`. The moving tags are `main` and `latest`:
+
+```sh
+docker pull ghcr.io/facebed/fastbed:latest
+docker run --rm \
+  --user 65532:65532 \
+  --read-only \
+  --cap-drop ALL \
+  --security-opt no-new-privileges:true \
+  --ulimit core=0:0 \
+  --stop-timeout 90 \
+  -p 9812:9812 \
+  ghcr.io/facebed/fastbed:latest
+```
+
+Arm64 remains unpublished until the native runtime, fingerprint, container, and
+SBOM gates pass on arm64 hardware.
+
+The amd64 package requires an x86-64-v3 CPU. Its 9.8 MB scratch filesystem
+contains a static-PIE Fastbed binary, the CA trust bundle, licenses, source
+offers, and build receipts—no shell, package database, ELF interpreter, or
+shared library.
 
 ## Measured service comparison
 
@@ -110,9 +142,10 @@ shown above only to use different verified prefixes.
 The executable statically embeds curl-impersonate and its HTTP/TLS/compression
 closure, yyjson, GNU libmicrohttpd, and libyaml. CMake inspects the completed
 ELF and fails if those libraries appear in `DT_NEEDED` or their required
-compiled-in symbols are absent. libc, libstdc++, libgcc, and PCRE2 remain
-runtime system dependencies. Dynamic system libcurl is available only through
-the explicit non-production CMake option
+compiled-in symbols are absent. The host-native build retains libc, libstdc++,
+libgcc, and PCRE2 as system dependencies; the scratch package statically links
+those as well and has no interpreter or `DT_NEEDED`. Dynamic system libcurl is
+available only through the explicit non-production CMake option
 `FASTBED_ALLOW_DYNAMIC_SYSTEM_CURL=ON`.
 
 `build.sh` accepts no mode arguments. It produces a host-native, full-LTO,
@@ -124,6 +157,8 @@ from their CLI and compiled string surface.
 
 The current host-native binary has SHA-256
 `a244404a4845f819eeb3d418566e70e717ed710e2a6e352921bf10afa207afc3`.
+The stripped static-PIE binary in the scratch package has SHA-256
+`bf9f96b2c6e0937871ec21e8de8ea9a264fd878a4fd1ed6775be2ef79447a83b`.
 The sealed CLI and linkage E2E also proves that a deliberately dynamic-curl
 diagnostic build is rejected by the production linkage verifier; see
 [`docs/VERIFICATION.md`](docs/VERIFICATION.md).

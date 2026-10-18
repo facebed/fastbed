@@ -4,11 +4,11 @@ The production inventory describes the source-built curl 8.23.0 HTTP/2-only
 closure. It does not contain nghttp3 or ngtcp2. Fastbed's own project license
 remains `NOASSERTION`; the supply-chain gate does not infer or invent one.
 
-The sealed amd64 E2E at
-`artifacts/fastbed-embedded-static-sbom-amd64-20261018-04` passed official-schema
+The sealed scratch amd64 E2E at
+`artifacts/fastbed-scratch-static-sbom-amd64-20261018-04` passed official-schema
 validation, byte-reproducible double generation, the unknown-version negative
 control, post-link receipt binding, and LGPL relink closure. It binds image ID
-`sha256:4663cd347812544141b6ecb77cb170f6b9fc9b19313f768c4f9120d889aeb8a2`.
+`sha256:4f69372a80a6467a757a211ce740589288b96a9ff2c3348be39148a4f458af16`.
 The arm64 workflow is defined but has not been executed on a native arm64
 builder; do not infer arm64 release evidence from this amd64 result.
 
@@ -24,7 +24,8 @@ Generation and verification fail closed when any one of these bindings breaks:
 - either static-prefix checksum closure is incomplete, unsorted, stale, or
   differs from the checksum aggregate and linked-library hashes in the receipt;
 - the captured link command omits, duplicates, or substitutes one of the ten
-  curl archives or the libmicrohttpd/libyaml archives, or mentions HTTP/3;
+  curl archives or the libmicrohttpd/libyaml/PCRE2 archives, or mentions
+  HTTP/3;
 - the per-architecture LGPL relink archive is absent, has a different digest,
   has an invalid internal checksum closure, or does not bind the exact
   libmicrohttpd/libidn2/libunistring archives, corresponding source archives,
@@ -32,17 +33,18 @@ Generation and verification fail closed when any one of these bindings breaks:
 - an upstream-fixed VEX record claims a version below its fixed version, or a
   local-backport record lacks its prerequisite, fix commit, patch digest, and
   patched-source digest;
-- runtime metadata, licenses, rebuild inputs, source offers, or Alpine package
-  metadata are incomplete or disagree with the declared inventory.
+- runtime metadata, licenses, rebuild inputs, source offers, scratch manifest,
+  or contributing Alpine build-package metadata are incomplete or disagree
+  with the declared inventory.
 
 The receipt is generated only after the final link, byte-identical LGPL relink
 check, debug split, and runtime strip. A curl prefix that merely exists beside
 the binary is not accepted as evidence that the binary consumed it.
 
 Fastbed uses a manual, fail-closed supply-chain workflow because ordinary image
-scanners see the Alpine packages but miss the application, the source-built
-GNU libmicrohttpd library, vendored data and source, and the libraries embedded
-through curl-impersonate's static archives.
+scanners see no package database in the scratch image and can miss the
+application, statically linked toolchain libraries, source-built dependencies,
+vendored data, and curl-impersonate's embedded archive closure.
 
 The authoritative declaration is
 `artifact-schema/supply-chain.inventory.json`. It records exact versions,
@@ -53,13 +55,13 @@ declaration only when it agrees with all of the following evidence:
 - the allowlisted Fastbed deployable source tree;
 - vendored yyjson and crawler-user-agents bytes;
 - the version and hash declarations in `CMakeLists.txt` and `Dockerfile`;
-- completed source-built curl and libmicrohttpd/libyaml prefixes, including
+- completed source-built curl and libmicrohttpd/libyaml/PCRE2 prefixes, including
   their `COMPONENTS.tsv`,
   `BUILD-MANIFEST.txt`, licenses, and complete `SHA256SUMS` closure;
 - the per-architecture post-link receipt and the exact relink archive it names;
-- a fresh image's exact Alpine package database, Fastbed hash/build ID,
-  embedded-resource manifest, dependency notices, and byte-identical prefix
-  metadata/licenses.
+- a fresh image's scratch manifest, exact contributing build-package records,
+  Fastbed hash/build ID, CA bundle, embedded-resource manifest, dependency
+  notices, and byte-identical prefix metadata/licenses.
 
 Unknown versions, extra or missing curl components, HTTP/3 archives, incomplete
 license sets, unbound patches, mismatched patched-source hashes, incomplete
@@ -77,28 +79,31 @@ The generated documents cover:
 - crawler-user-agents 1.59.0 data, byte-identical to the pinned wheel;
 - GNU libmicrohttpd 1.0.10, built from the verified source archive;
 - libyaml 0.2.5, built from the verified source archive;
+- PCRE2 10.47 with Unicode/JIT support, built from the verified source archive;
 - curl-impersonate v1.5.2 commit
   `9607b22ccf6c440e560c5f8ad5292b8044bb6dd7`;
 - embedded curl 8.23.0, patched BoringSSL, nghttp2 1.68.1, Brotli 1.2.0,
   Zstandard 1.5.7, zlib 1.3.2, libidn2 2.3.8, and libunistring 1.4.2;
-- every package installed in the final Alpine image, including exact package
-  versions, licenses, origins, architectures, and APK checksums.
+- the Alpine packages whose bytes supply static musl/libgcc/libstdc++ and the
+  copied CA bundle, including exact versions, licenses, origins, architectures,
+  and APK checksums. No package is installed in the final scratch filesystem.
 
-Fastbed itself is not published at a version-control URL in this worktree, so
-its source locator is the explicit `urn:fastbed:source-tree`; the generated
-source-tree SHA-256 and per-file allowlist digest provide its reproducible
-identity. The workflow does not mislabel the Python Facebed remote as the C
-port's source.
+Fastbed's source locator is `https://github.com/facebed/fastbed`. Generated
+documents also bind the exact source-tree SHA-256 and per-file allowlist digest,
+so the moving repository URL is not treated as a reproducible source identity.
+The workflow does not mislabel the Python Facebed repository as the C port's
+source.
 
-The resolver is curl's threaded resolver backed by the runtime musl
+The resolver is curl's threaded resolver backed by statically linked musl
 `getaddrinfo`; c-ares is not downloaded or linked. IDN processing comes from
-the pinned libidn2/libunistring static pair. Libmicrohttpd and libyaml are in a
-separate pinned static prefix; the runtime installs neither shared library.
+the pinned libidn2/libunistring static pair. Libmicrohttpd, libyaml, and PCRE2
+are in a separate pinned static prefix. The runtime has no ELF interpreter,
+`DT_NEEDED`, or shared library.
 
 `tools/create-release-artifacts.sh` emits one post-link receipt per
 architecture after relinking, stripping, and debug separation. The receipt
 binds the unstripped, relinked, and runtime Fastbed hashes and build ID; the
-exact link command; both prefix aggregates and all twelve linked archive
+exact link command; both prefix aggregates and all thirteen linked archive
 hashes; the embedded-resource/source digest; and the checksum-closed LGPL
 relink archive. The same canonical receipt is
 installed at `/usr/local/share/fastbed/BUILD-RECEIPT.json`. Runtime capture
@@ -231,21 +236,22 @@ jq -e '.vulnerabilities | length == 3' \
 
 The runtime capture first resolves the local tag to an immutable image ID, then
 creates but never starts an ephemeral container from that ID. It copies only
-`/lib/apk/db/installed` and a fixed list of candidate binaries, installed
-assets/data, manifests, rebuild material, and license/source-offer files. No
-binary or shell from the target image is executed. It does not inspect image
-environment variables, history, layers, application configuration, process
-memory, repository-untracked files, or arbitrary paths. Do not add credentials
-to the inventory or generated artifacts. Build credentials belong in ephemeral
-BuildKit secrets and are outside this workflow.
+the scratch runtime manifest, the five contributing build-package records, and
+a fixed list of the binary, CA bundle, embedded data, rebuild material,
+licenses, and source offers. No binary is executed; the image contains no
+shell. Capture does not inspect image environment variables, history, layers,
+application configuration, process memory, repository-untracked files, or
+arbitrary paths. Do not add credentials to the inventory or generated
+artifacts. Build credentials belong in ephemeral BuildKit secrets and are
+outside this workflow.
 
 ## License release gates
 
 An SBOM is not license compliance by itself.
 
-- Fastbed currently has no project license. The product is deliberately
-  recorded as `NOASSERTION`; choose and ship a project license before external
-  distribution.
+- Fastbed currently has no project license. The public source and container are
+  deliberately recorded as `NOASSERTION`; their visibility grants no unstated
+  permission to reuse or redistribute Fastbed.
 - The statically linked, no-HTTPS GNU libmicrohttpd 1.0.10 build is declared as
   `LGPL-2.1-or-later OR eCos-2.0`. The image contains exact `COPYING` bytes,
   the checksum-closed static-prefix offer, and the exact source archive at

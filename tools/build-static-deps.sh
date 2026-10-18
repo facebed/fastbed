@@ -123,20 +123,29 @@ download_verified \
     https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz \
     c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4 \
     yaml-0.2.5.tar.gz
+download_verified \
+    https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2 \
+    47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7 \
+    pcre2-10.47.tar.bz2
 
-mkdir "$sources/libmicrohttpd" "$sources/libyaml"
+mkdir "$sources/libmicrohttpd" "$sources/libyaml" "$sources/pcre2"
 tar -xzf "$downloads/libmicrohttpd-1.0.10.tar.gz" \
     -C "$sources/libmicrohttpd" --strip-components=1
 tar -xzf "$downloads/yaml-0.2.5.tar.gz" \
     -C "$sources/libyaml" --strip-components=1
+tar -xjf "$downloads/pcre2-10.47.tar.bz2" \
+    -C "$sources/pcre2" --strip-components=1
 check_hash 7399547209438c93f9b90297954698773d4846cea44cde5ca982c84c45952a3b \
     "$sources/libmicrohttpd/COPYING"
 check_hash c40112449f254b9753045925248313e9270efa36d226b22d82d4cc6c43c57f29 \
     "$sources/libyaml/License"
+check_hash 99272c55f3dcfa07a8a7e15a5c1a33096e4727de74241d65fa049fccfdd59507 \
+    "$sources/pcre2/COPYING"
 
 common_flags="-O2 -g1 -fPIC -ffunction-sections -fdata-sections"
 mhd_flags="$common_flags -ffile-prefix-map=$sources/libmicrohttpd=/usr/src/libmicrohttpd -fdebug-prefix-map=$sources/libmicrohttpd=/usr/src/libmicrohttpd"
 yaml_flags="$common_flags -ffile-prefix-map=$sources/libyaml=/usr/src/libyaml -fdebug-prefix-map=$sources/libyaml=/usr/src/libyaml"
+pcre2_flags="$common_flags -ffile-prefix-map=$sources/pcre2=/usr/src/pcre2 -fdebug-prefix-map=$sources/pcre2=/usr/src/pcre2"
 
 (
     cd "$sources/libmicrohttpd"
@@ -174,7 +183,26 @@ yaml_flags="$common_flags -ffile-prefix-map=$sources/libyaml=/usr/src/libyaml -f
     make install >"$logs/libyaml-install.log" 2>&1
 )
 
-for archive in "$stage/lib/libmicrohttpd.a" "$stage/lib/libyaml.a"; do
+(
+    cd "$sources/pcre2"
+    CC="$CC" AR="$AR" RANLIB="$RANLIB" \
+    CFLAGS="$pcre2_flags" \
+    ./configure \
+        --prefix="$stage" \
+        --enable-static \
+        --disable-shared \
+        --disable-dependency-tracking \
+        --enable-jit \
+        --disable-pcre2-16 \
+        --disable-pcre2-32 \
+        >"$logs/pcre2-configure.log" 2>&1
+    make -j"$(getconf _NPROCESSORS_ONLN)" \
+        >"$logs/pcre2-build.log" 2>&1
+    make install >"$logs/pcre2-install.log" 2>&1
+)
+
+for archive in "$stage/lib/libmicrohttpd.a" "$stage/lib/libyaml.a" \
+               "$stage/lib/libpcre2-8.a"; do
     [ -f "$archive" ] || {
         echo "static dependency archive missing: $archive" >&2
         exit 1
@@ -188,6 +216,7 @@ if find "$stage" -type f \( -name '*.so' -o -name '*.so.*' \) -print -quit |
 fi
 "$NM" "$stage/lib/libmicrohttpd.a" | grep -Eq '[[:space:]]T[[:space:]]+MHD_start_daemon$'
 "$NM" "$stage/lib/libyaml.a" | grep -Eq '[[:space:]]T[[:space:]]+yaml_parser_initialize$'
+"$NM" "$stage/lib/libpcre2-8.a" | grep -Eq '[[:space:]]T[[:space:]]+pcre2_compile_8$'
 
 metadata=$stage/share/fastbed-static-deps
 licenses=$metadata/licenses
@@ -195,6 +224,7 @@ rebuild=$metadata/rebuild
 mkdir -p "$licenses" "$rebuild/tools"
 cp "$sources/libmicrohttpd/COPYING" "$licenses/libmicrohttpd-COPYING"
 cp "$sources/libyaml/License" "$licenses/libyaml-License"
+cp "$sources/pcre2/COPYING" "$licenses/pcre2-COPYING"
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cp "$script_dir/build-static-deps.sh" "$rebuild/tools/build-static-deps.sh"
 
@@ -202,11 +232,12 @@ cat >"$metadata/COMPONENTS.tsv" <<'EOF'
 component	version	source_sha256	license_file	archive
 libmicrohttpd	1.0.10	04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685	libmicrohttpd-COPYING	lib/libmicrohttpd.a
 libyaml	0.2.5	c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4	libyaml-License	lib/libyaml.a
+pcre2	10.47	47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7	pcre2-COPYING	lib/libpcre2-8.a
 EOF
 
 manifest=$metadata/BUILD-MANIFEST.txt
 {
-    printf 'profile=fastbed-static-deps-v1\n'
+    printf 'profile=fastbed-static-deps-v2\n'
     printf 'target_arch=%s\n' "$target_arch"
     printf 'host_machine=%s\n' "$machine"
     printf 'source_date_epoch=%s\n' "$source_date_epoch"
@@ -218,6 +249,10 @@ manifest=$metadata/BUILD-MANIFEST.txt
     printf 'libyaml_source_sha256=c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4\n'
     printf 'libyaml_archive_sha256=%s\n' \
         "$(sha256sum "$stage/lib/libyaml.a" | awk '{print $1}')"
+    printf 'pcre2_version=10.47\n'
+    printf 'pcre2_source_sha256=47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7\n'
+    printf 'pcre2_archive_sha256=%s\n' \
+        "$(sha256sum "$stage/lib/libpcre2-8.a" | awk '{print $1}')"
     printf 'builder_sha256=%s\n' \
         "$(sha256sum "$script_dir/build-static-deps.sh" | awk '{print $1}')"
     printf 'cc=%s\n' "$("$CC" --version | sed -n '1p')"
@@ -226,10 +261,10 @@ manifest=$metadata/BUILD-MANIFEST.txt
 } >"$manifest"
 
 cat >"$metadata/SOURCE-OFFER.txt" <<'EOF'
-This prefix embeds libmicrohttpd and libyaml as static archives. The exact
-builder is under rebuild/. A distributable Fastbed release must retain the
-verified upstream source archives and the LGPL relink kit named by its build
-receipt. Rebuild natively on the target architecture with:
+This prefix embeds libmicrohttpd, libyaml, and PCRE2 as static archives. The
+exact builder is under rebuild/. A distributable Fastbed release must retain
+the verified upstream source archives and the LGPL relink kit named by its
+build receipt. Rebuild natively on the target architecture with:
 
     rebuild/tools/build-static-deps.sh OUTPUT_DIR TARGETARCH
 EOF
@@ -258,10 +293,12 @@ if [ -n "$source_output" ]; then
     }
     mkdir -p "$source_output"
     cp "$downloads/libmicrohttpd-1.0.10.tar.gz" \
-       "$downloads/yaml-0.2.5.tar.gz" "$source_output/"
+       "$downloads/yaml-0.2.5.tar.gz" \
+       "$downloads/pcre2-10.47.tar.bz2" "$source_output/"
     (
         cd "$source_output"
-        sha256sum libmicrohttpd-1.0.10.tar.gz yaml-0.2.5.tar.gz >SHA256SUMS
+        sha256sum libmicrohttpd-1.0.10.tar.gz pcre2-10.47.tar.bz2 \
+            yaml-0.2.5.tar.gz >SHA256SUMS
         sha256sum -c SHA256SUMS >/dev/null
     )
 fi

@@ -9,6 +9,7 @@
     "image_id",
     "image_architecture",
     "image_reference",
+    "runtime",
     "build_receipt",
     "embedded_resources",
     "packages",
@@ -20,6 +21,31 @@
     "image_id": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
     "image_architecture": { "enum": ["amd64", "arm64"] },
     "image_reference": { "type": "string", "minLength": 1 },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "profile",
+        "manifest_path",
+        "manifest_sha256",
+        "base_image",
+        "ca_bundle_sha256"
+      ],
+      "properties": {
+        "kind": { "const": "scratch-static" },
+        "profile": { "const": "fastbed-scratch-static-v1" },
+        "manifest_path": {
+          "const": "/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt"
+        },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "base_image": {
+          "type": "string",
+          "pattern": "^alpine:[^@]+@sha256:[0-9a-f]{64}$"
+        },
+        "ca_bundle_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
     "build_receipt": {
       "type": "object",
       "additionalProperties": false,
@@ -41,6 +67,7 @@
       }
     },
     "packages": {
+      "description": "Build-stage packages that supplied bytes copied or statically linked into the scratch runtime.",
       "type": "array",
       "minItems": 1,
       "items": {

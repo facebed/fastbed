@@ -19,6 +19,18 @@ if(NOT readelf_status EQUAL 0)
         "cannot inspect Fastbed dynamic table: ${readelf_error}")
 endif()
 
+execute_process(
+    COMMAND "${FASTBED_READELF}" -lW "${FASTBED_BINARY}"
+    RESULT_VARIABLE program_status
+    OUTPUT_VARIABLE program_headers
+    ERROR_VARIABLE program_error)
+if(NOT program_status EQUAL 0)
+    message(FATAL_ERROR
+        "cannot inspect Fastbed program headers: ${program_error}")
+endif()
+string(REGEX MATCH "[[]Requesting program interpreter:[^]]+[]]"
+       interpreter_entry "${program_headers}")
+
 string(REGEX MATCHALL "Shared library: \\[[^]]+\\]"
        needed_entries "${dynamic_table}")
 set(needed_libraries "")
@@ -31,6 +43,19 @@ foreach(entry IN LISTS needed_entries)
             "bundled dependency escaped into DT_NEEDED: ${library}")
     endif()
 endforeach()
+
+set(fully_static false)
+if(DEFINED FASTBED_REQUIRE_FULLY_STATIC AND FASTBED_REQUIRE_FULLY_STATIC)
+    if(needed_libraries)
+        message(FATAL_ERROR
+            "fully static Fastbed has DT_NEEDED entries: ${needed_libraries}")
+    endif()
+    if(NOT "${interpreter_entry}" STREQUAL "")
+        message(FATAL_ERROR
+            "fully static Fastbed has an ELF interpreter: ${interpreter_entry}")
+    endif()
+    set(fully_static true)
+endif()
 
 execute_process(
     COMMAND "${FASTBED_NM}" -a "${FASTBED_BINARY}"
@@ -70,8 +95,15 @@ if(DEFINED FASTBED_LINKAGE_REPORT AND
     file(WRITE "${FASTBED_LINKAGE_REPORT}"
         "schema=1\n"
         "binary=${FASTBED_BINARY}\n"
+        "fully_static=${fully_static}\n"
+        "interpreter=${interpreter_entry}\n"
         "needed=${needed_csv}\n"
         "bundled_static_symbols=curl_easy_impersonate,curl_easy_init,yyjson_read_opts,MHD_start_daemon,yaml_parser_initialize,fb_embedded_index_html,fb_embedded_favicon_ico,fb_embedded_banner_png,fb_embedded_crawler_json\n")
 endif()
-message(STATUS
-    "verified bundled static linkage; dynamic system libraries: ${needed_csv}")
+if(fully_static)
+    message(STATUS
+        "verified fully static bundled linkage; no interpreter or DT_NEEDED entries")
+else()
+    message(STATUS
+        "verified bundled static linkage; dynamic system libraries: ${needed_csv}")
+endif()

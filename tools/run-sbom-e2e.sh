@@ -100,7 +100,7 @@ fi
 jq -e '
     .bomFormat == "CycloneDX" and
     .specVersion == "1.6" and
-    (.components | length >= 20) and
+    (.components | length >= 19) and
     ([.components[].version | ascii_downcase | select(. == "unknown" or . == "noassertion")] | length == 0) and
     ([.metadata.component.properties[] | select(.name == "fastbed:resolver-backend") | .value] == ["threaded"])
 ' "$artifact_a/cyclonedx-sbom.json" >/dev/null
@@ -161,6 +161,7 @@ for lgpl_source in \
     source/curl-impersonate/libunistring-1.4.2.tar.xz \
     source/curl-impersonate/libunistring-1.4.2.tar.xz.sig \
     source/static-deps/libmicrohttpd-1.0.10.tar.gz \
+    source/static-deps/pcre2-10.47.tar.bz2 \
     source/static-deps/yaml-0.2.5.tar.gz; do
     mkdir -p -- "$work/final/release-artifacts/$(dirname -- "$lgpl_source")"
     cp -- "$release_artifact_root/$lgpl_source" \

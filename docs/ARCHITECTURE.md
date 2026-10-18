@@ -87,9 +87,10 @@ cookies at every redirect hop, and requires target-local identity evidence
 before rendering extracted content.
 
 The process disables core dumps before loading configuration. Production builds
-hide replay and file-override controls, verify their bundled libraries after
-linking, and retain only libc, libstdc++, libgcc, and PCRE2 as direct dynamic
-dependencies.
+hide replay and file-override controls and verify their bundled libraries after
+linking. The local host-native profile may retain libc, libstdc++, libgcc, and
+PCRE2 as direct system dependencies. The published scratch profile statically
+links those dependencies too and rejects any ELF interpreter or `DT_NEEDED`.
 
 ## Build profiles
 
@@ -97,8 +98,10 @@ dependencies.
 - CMake can create portable, x86-64-v3, sanitizer, PGO, and BOLT-ready builds.
 - `FASTBED_VERIFICATION_BUILD=ON` exposes offline replay controls; it is not a
   production profile.
-- The Docker build creates a portable amd64 or arm64 image and records exact
-  dependency receipts. Only amd64 has completed the current release gates.
+- The published Docker build is an amd64 x86-64-v3 static PIE in a scratch
+  filesystem. It uses `-O3`, full LTO, lld/LTO-O3, safe ICF, section garbage
+  collection, fortify, and stack protection. Only amd64 has completed the
+  current release gates.
 
 Compatibility, performance, live transport, memory safety, supply chain, and
 container behavior are separate evidence axes. See

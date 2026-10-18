@@ -12,7 +12,7 @@ ARG LIBMICROHTTPD_SHA256
 ARG SOURCE_DATE_EPOCH
 RUN apk add --no-cache \
       autoconf automake bash binutils build-base bzip2 ca-certificates clang \
-      cmake curl go gzip libtool linux-headers lld ninja patch pcre2-dev perl \
+      cmake curl go gzip libtool linux-headers lld ninja patch perl \
       pkgconf python3 tar unzip xz
 
 WORKDIR /src
@@ -52,8 +52,8 @@ COPY tools/create-release-artifacts.sh tools/embed-resources.py /src/tools/
 
 RUN set -eux; \
     case "${TARGETARCH}" in \
-      amd64) pack_relr=ON ;; \
-      arm64) pack_relr=OFF ;; \
+      amd64) isa_flag=-DFASTBED_X86_64_V3=ON ;; \
+      arm64) isa_flag=-DFASTBED_X86_64_V3=OFF ;; \
       *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
     esac; \
     cmake -S . -B /tmp/build -G Ninja \
@@ -65,48 +65,97 @@ RUN set -eux; \
       -DFASTBED_LTO=ON \
       -DFASTBED_LTO_MODE=FULL \
       -DFASTBED_USE_LLD=ON \
-      -DFASTBED_PACK_RELR="${pack_relr}"; \
+      -DFASTBED_PACK_RELR=OFF \
+      -DFASTBED_FULLY_STATIC=ON \
+      "${isa_flag}"; \
     cmake --build /tmp/build --parallel; \
     DESTDIR=/out cmake --install /tmp/build; \
+    mkdir -p /out/etc/ssl/certs /out/usr/local/share/fastbed-runtime; \
+    cp /etc/ssl/certs/ca-certificates.crt \
+      /out/etc/ssl/certs/ca-certificates.crt; \
+    : > /out/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES; \
+    for package in ca-certificates ca-certificates-bundle libgcc libstdc++ musl; do \
+      awk -v wanted="$package" 'BEGIN { RS=""; ORS="\n\n" } \
+        { count = split($0, lines, "\n"); \
+          for (line_no = 1; line_no <= count; ++line_no) \
+            if (lines[line_no] == "P:" wanted) { print; next } }' \
+        /lib/apk/db/installed \
+        >> /out/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES; \
+      grep -Fx "P:${package}" \
+        /out/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES; \
+    done; \
+    { \
+      echo 'profile=fastbed-scratch-static-v1'; \
+      echo "base_image=${ALPINE_IMAGE}"; \
+      echo "target_arch=${TARGETARCH}"; \
+      echo "source_date_epoch=${SOURCE_DATE_EPOCH}"; \
+      printf 'ca_bundle_sha256='; \
+      sha256sum /out/etc/ssl/certs/ca-certificates.crt | cut -d' ' -f1; \
+    } > /out/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt; \
     SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH}" \
       /src/tools/create-release-artifacts.sh \
       /src /tmp/build /tmp/curl-impersonate /tmp/static-deps \
       /out /release-artifacts \
-      "${TARGETARCH}" "${ALPINE_IMAGE}"
+      "${TARGETARCH}" "${ALPINE_IMAGE}"; \
+    mkdir -p \
+      /out/usr/share/licenses/fastbed \
+      /out/usr/share/licenses/libmicrohttpd \
+      /out/usr/share/licenses/libyaml \
+      /out/usr/share/licenses/pcre2 \
+      /out/usr/local/share/fastbed-source-offers; \
+    cp /tmp/static-deps/share/fastbed-static-deps/licenses/libmicrohttpd-COPYING \
+      /out/usr/share/licenses/libmicrohttpd/COPYING; \
+    cp /tmp/static-deps/share/fastbed-static-deps/licenses/libyaml-License \
+      /out/usr/share/licenses/libyaml/License; \
+    cp /tmp/static-deps/share/fastbed-static-deps/licenses/pcre2-COPYING \
+      /out/usr/share/licenses/pcre2/COPYING; \
+    cp -R /tmp/static-deps/share/fastbed-static-deps \
+      /out/usr/local/share/fastbed-static-deps; \
+    cp -R /tmp/curl-impersonate/share/fastbed-curl-impersonate \
+      /out/usr/local/share/fastbed-curl-impersonate; \
+    cp /release-artifacts/source/static-deps/libmicrohttpd-${LIBMICROHTTPD_VERSION}.tar.gz \
+      /release-artifacts/source/static-deps/yaml-0.2.5.tar.gz \
+      /release-artifacts/source/static-deps/pcre2-10.47.tar.bz2 \
+      /out/usr/local/share/fastbed-source-offers/; \
+    cp /src/third_party/yyjson/LICENSE \
+      /out/usr/share/licenses/fastbed/yyjson-LICENSE; \
+    cp /src/third_party/crawler-user-agents/LICENSE \
+      /out/usr/share/licenses/fastbed/crawler-user-agents-LICENSE
 
 FROM scratch AS release-artifacts
 COPY --from=build /release-artifacts/ /
 
-FROM ${ALPINE_IMAGE} AS runtime
-ARG LIBMICROHTTPD_VERSION
-RUN apk add --no-cache \
-      ca-certificates libgcc libstdc++ pcre2 \
-    && addgroup -S fastbed \
-    && adduser -S -D -H -G fastbed fastbed
+FROM build AS verification-build
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) isa_flag=-DFASTBED_X86_64_V3=ON ;; \
+      arm64) isa_flag=-DFASTBED_X86_64_V3=OFF ;; \
+      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    cmake -S /src -B /tmp/build-verification -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_C_COMPILER=clang \
+      -DFASTBED_CURL_IMPERSONATE_ROOT=/tmp/curl-impersonate \
+      -DFASTBED_STATIC_DEPS_ROOT=/tmp/static-deps \
+      -DFASTBED_LTO=ON \
+      -DFASTBED_LTO_MODE=FULL \
+      -DFASTBED_USE_LLD=ON \
+      -DFASTBED_PACK_RELR=OFF \
+      -DFASTBED_FULLY_STATIC=ON \
+      -DFASTBED_VERIFICATION_BUILD=ON \
+      "${isa_flag}"; \
+    cmake --build /tmp/build-verification --parallel
 
-COPY --from=build /tmp/static-deps/share/fastbed-static-deps/licenses/libmicrohttpd-COPYING \
-    /usr/share/licenses/libmicrohttpd/COPYING
-COPY --from=build /tmp/static-deps/share/fastbed-static-deps/licenses/libyaml-License \
-    /usr/share/licenses/libyaml/License
-COPY --from=build /tmp/static-deps/share/fastbed-static-deps/ \
-    /usr/local/share/fastbed-static-deps/
-COPY --from=build /release-artifacts/source/static-deps/libmicrohttpd-${LIBMICROHTTPD_VERSION}.tar.gz \
-    /usr/local/share/fastbed-source-offers/libmicrohttpd-${LIBMICROHTTPD_VERSION}.tar.gz
-COPY --from=build /release-artifacts/source/static-deps/yaml-0.2.5.tar.gz \
-    /usr/local/share/fastbed-source-offers/yaml-0.2.5.tar.gz
+FROM scratch AS verification
+COPY --from=verification-build /tmp/build-verification/fastbed /fastbed
+
+FROM scratch AS runtime
 COPY --from=build /out/ /
-COPY --from=build /tmp/curl-impersonate/share/fastbed-curl-impersonate/ \
-    /usr/local/share/fastbed-curl-impersonate/
-COPY third_party/yyjson/LICENSE /usr/share/licenses/fastbed/yyjson-LICENSE
-COPY third_party/crawler-user-agents/LICENSE \
-    /usr/share/licenses/fastbed/crawler-user-agents-LICENSE
 
-ENV FASTBED_HEALTH_PORT=9812
-USER fastbed:fastbed
+USER 65532:65532
 EXPOSE 9812
 STOPSIGNAL SIGTERM
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --start-interval=1s --retries=3 \
-  CMD wget -q -Y off -O /dev/null "http://127.0.0.1:${FASTBED_HEALTH_PORT}/healthz" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/fastbed"]
 

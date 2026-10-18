@@ -249,12 +249,12 @@ all of these cases:
 7. A host `libcurl`, OpenSSL, nghttp2, zlib/Zstandard/Brotli, IDN, or yyjson
    shared object can enter `DT_NEEDED` through configuration drift. Production
    configuration and the post-link gate must reject every such dependency.
-8. Conversely, forcing the base runtime ABI static can make DNS/NSS, libc,
-   security updates, and deployment compatibility worse. libc, libstdc++,
-   PCRE2, and their system transitive dependencies remain dynamically linked.
-   Libmicrohttpd and libyaml are explicit exceptions: their pinned archives
-   must be embedded alongside curl-impersonate and yyjson and represented in
-   source, license, receipt, and relink evidence.
+8. Conversely, forcing the base runtime ABI static can make DNS, libc, security
+   updates, and deployment compatibility worse. The host-native profile keeps
+   libc, libstdc++, libgcc, and PCRE2 dynamic. The scratch profile is a separate
+   musl static-PIE contract: it pins PCRE2 with libmicrohttpd/libyaml, records
+   the contributing toolchain packages, embeds a verified CA bundle, and must
+   pass live DNS/TLS plus container/SBOM gates before publication.
 9. A system-curl diagnostic build can accidentally become the default. It must
    require an explicit non-production CMake opt-in and remain incompatible with
    the production static-link verification claim.
@@ -298,6 +298,56 @@ all of these cases:
     its CLI is hidden. Link-time garbage collection and symbol/argument audits
     must prove the release surface, while verification builds retain the
     explicit override path needed by process-level replay.
+
+## Scratch container and fully static failures
+
+1. `FROM scratch` does not prove static linkage. Copying an ELF interpreter or
+   shared libraries into the final stage produces a small dynamic image, not a
+   fully static executable. The final ELF must have no `PT_INTERP`, no
+   `DT_NEEDED`, and no unresolved dynamic symbol dependency.
+2. CMake's imported PCRE2 target can resolve to `libpcre2-8.so` even when the
+   link command also contains `-static`. A fully static profile must select and
+   checksum the archive explicitly; the same applies to libstdc++ and libgcc.
+3. A static link can silently discard the build ID, embedded-resource symbols,
+   stack protection, LTO, section garbage collection, or safe identical-code
+   folding. Linkage proof and optimization proof are separate gates.
+4. Relative-relocation packing and `-z now`/RELRO hardening target dynamically
+   relocated ELFs. Treating an irrelevant or ignored flag as an optimization
+   pass is misleading; static PIE and runtime ASLR need their own ELF evidence.
+5. A scratch image has no CA bundle. HTTPS may work in fixture replay while all
+   live Facebook requests fail certificate validation. The image must copy a
+   verified trust bundle without importing a shell or package manager.
+6. Static musl DNS still depends on the container runtime's injected
+   `/etc/resolv.conf`, `/etc/hosts`, and `/etc/hostname`. Test DNS and TLS from
+   the final scratch image rather than only from the build stage.
+7. Scratch has no passwd database. A named `USER fastbed:fastbed` cannot be
+   assumed to resolve; use a fixed numeric non-root UID/GID and make the E2E
+   assert the image metadata and running identity.
+8. Scratch has no `wget`, shell, or other health client. A Dockerfile
+   `HEALTHCHECK` that references one leaves every container unhealthy. Use an
+   external orchestrator probe unless a separately verified static probe is
+   deliberately shipped.
+9. Removing the Alpine runtime also removes its package database. SBOM capture
+   must describe a scratch filesystem and its copied trust data directly; it
+   must not copy or fabricate an APK database that implies absent packages are
+   installed.
+10. Licenses, exact source offers, embedded-resource metadata, the post-link
+    receipt, and LGPL relink material can be lost when the runtime stage is
+    reduced to the executable. Scratch changes the filesystem shape, not the
+    distribution obligations.
+11. Existing container checks may accidentally require the old named user,
+    Alpine health status, or a shell. Update them to inspect scratch state from
+    outside the container while preserving read-only, no-capability, PID,
+    core-dump, asset, redirect, and graceful-shutdown coverage.
+12. `-march=native` in a hosted package build bakes the runner's incidental CPU
+    into the public image. The package must use an explicit deployment ISA
+    such as x86-64-v3, while host-native builds remain local artifacts.
+13. Sanitizers and PGO-generation runtimes conflict with a minimal fully static
+    release. Never label an instrumented or untrained binary as the optimized
+    package; retain separate sanitizer and representative PGO/BOLT gates.
+14. Publishing an arm64 manifest because QEMU can link it is not native arm64
+    certification. Keep the public manifest amd64-only until the arm64 runtime,
+    fingerprint, container, and supply-chain gates pass.
 
 ## Optimization failures
 

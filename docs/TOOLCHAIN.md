@@ -110,7 +110,7 @@ References:
 - <https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html>
 - <https://github.com/llvm/llvm-project/blob/main/bolt/README.md>
 
-## Pinned libmicrohttpd
+## Pinned static server and parser dependencies
 
 Fastbed requires GNU libmicrohttpd 1.0.10 or newer. The asynchronous server
 depends on the suspend/resume fixes released in 1.0.10, including the
@@ -129,9 +129,12 @@ sha256 04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685
 
 The container enables production compiler hardening while disabling the shared
 library, unused HTTPS backend, and build-only documentation, examples, and
-tools. `tools/build-static-deps.sh` also builds pinned libyaml 0.2.5 as a static
-archive. Both archives are checksum-closed, inspected after final link, and
-included in source/relink evidence. Inbound TLS remains the reverse proxy's
+tools. `tools/build-static-deps.sh` also builds pinned libyaml 0.2.5 and PCRE2
+10.47 as static archives. PCRE2 enables Unicode and JIT support; its source
+archive SHA-256 is
+`47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7`.
+All three archives are checksum-closed, inspected after final link, and included
+in source/relink evidence. Inbound TLS remains the reverse proxy's
 responsibility; this does not affect the separately pinned curl-impersonate
 archive or its outbound Facebook TLS/HTTP fingerprint.
 
@@ -139,6 +142,7 @@ References:
 
 - <https://ftp.gnu.org/gnu/libmicrohttpd/>
 - <https://git.gnunet.org/gnunet/libmicrohttpd/commit/7922bbd7a9561fc3f8ebd6f5cecdc288dcd4457f.html>
+- <https://github.com/PCRE2Project/pcre2/releases/tag/pcre2-10.47>
 
 ## BOLT
 
@@ -270,18 +274,31 @@ References:
 - <https://github.com/lexiforest/curl_cffi/blob/main/docs/dev.rst>
 - <https://curl.se/docs/install.html>
 
-## Container and architecture rules
+## Scratch container and architecture rules
 
-The Dockerfile is the portable full-LTO control. PGO and BOLT profiles are
-architecture- and workload-specific and must be trained on native target
-hardware. Do not train them under QEMU. Docker documents emulation as
-substantially slower for compilation and compression, and emulation does not
-provide representative PMU or branch-history data.
+The published amd64 image is an explicitly constrained x86-64-v3 package, not
+a baseline x86-64 image. Its production binary is static PIE and enables `-O3`,
+full LTO, lld's LTO-O3 pass, safe identical-code folding, section garbage
+collection, fortify, stack protection, and a GNU build ID. The post-link gate
+requires no `PT_INTERP` and no `DT_NEEDED` before the binary can enter the
+scratch runtime.
 
-An x86-64-v3 or `-march=native` artifact must never replace the plain amd64
-image. Publish it under an explicitly constrained platform/tag and prove the
-runtime host supports its ISA. The arm64 profile must be independently trained
-on arm64 hardware; neither PGO nor BOLT data is portable across architectures.
+The final filesystem contains the binary, CA bundle, licenses, exact source
+offers, embedded-resource manifest, runtime provenance, and build receipt. It
+does not contain a shell, package database, loader, or shared library. The CA
+bundle is SHA-bound to the scratch runtime manifest. External orchestration
+probes `/healthz`; adding an in-image health client would weaken this boundary.
+
+PGO and BOLT remain architecture- and workload-specific rather than generic
+switches. They must be trained on a representative native workload and checked
+against a disjoint holdout, so the hosted package build does not fabricate a
+profile or train under QEMU. Docker documents emulation as substantially slower
+for compilation and compression, and emulation does not provide representative
+PMU or branch-history data.
+
+The arm64 profile must be independently trained and certified on arm64
+hardware; neither PGO nor BOLT data is portable across architectures. The GHCR
+manifest stays amd64-only until that work is complete.
 
 References:
 

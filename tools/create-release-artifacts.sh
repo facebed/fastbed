@@ -59,6 +59,7 @@ for file in "$fastbed" "$runtime_fastbed" \
             "$curl_root/share/fastbed-curl-impersonate/BUILD-MANIFEST.txt" \
             "$static_deps_root/lib/libmicrohttpd.a" \
             "$static_deps_root/lib/libyaml.a" \
+            "$static_deps_root/lib/libpcre2-8.a" \
             "$static_deps_root/share/fastbed-static-deps/BUILD-MANIFEST.txt"; do
     test -f "$file" || {
         echo "required release input not found: $file" >&2
@@ -190,11 +191,13 @@ chmod 0755 "$bundle/relink-fastbed.sh"
     printf 'ninja=%s\n' "$(ninja --version)"
     printf 'libmicrohttpd=1.0.10-static\n'
     printf 'libyaml=0.2.5-static\n'
+    printf 'pcre2=10.47-static\n'
     printf 'libmicrohttpd_archive_sha256=%s\n' \
         "$(sha256sum "$static_deps_root/lib/libmicrohttpd.a" | awk '{print $1}')"
     printf 'libyaml_archive_sha256=%s\n' \
         "$(sha256sum "$static_deps_root/lib/libyaml.a" | awk '{print $1}')"
-    printf 'libpcre2=%s\n' "$(pkg-config --modversion libpcre2-8)"
+    printf 'pcre2_archive_sha256=%s\n' \
+        "$(sha256sum "$static_deps_root/lib/libpcre2-8.a" | awk '{print $1}')"
     printf '\n[apk-packages]\n'
     apk info -vv | LC_ALL=C sort
 } > "$bundle/TOOLCHAIN.txt"
@@ -498,11 +501,12 @@ for number, line in enumerate(
         raise SystemExit(f"malformed static dependency manifest line {number}")
     static_manifest_values[key] = value
 if (
-    static_manifest_values.get("profile") != "fastbed-static-deps-v1"
+    static_manifest_values.get("profile") != "fastbed-static-deps-v2"
     or static_manifest_values.get("target_arch") != target_arch
     or static_manifest_values.get("source_date_epoch") != str(source_date_epoch)
     or static_manifest_values.get("libmicrohttpd_version") != "1.0.10"
     or static_manifest_values.get("libyaml_version") != "0.2.5"
+    or static_manifest_values.get("pcre2_version") != "10.47"
 ):
     raise SystemExit("static dependency build manifest identity mismatch")
 
@@ -551,7 +555,11 @@ if set(static_sums) != actual_static_files:
         "static dependency SHA256SUMS does not close over the prefix")
 static_prefix_aggregate.update(b"SHA256SUMS\0")
 static_prefix_aggregate.update(digest(static_sums_path).encode("ascii"))
-static_library_paths = ["lib/libmicrohttpd.a", "lib/libyaml.a"]
+static_library_paths = [
+    "lib/libmicrohttpd.a",
+    "lib/libyaml.a",
+    "lib/libpcre2-8.a",
+]
 for relative in static_library_paths:
     absolute = str(static_prefix / relative)
     if link_command.count(absolute) != 1:
@@ -636,6 +644,13 @@ receipt = {
                 "sha256": digest(regular(
                     release_root / "source/static-deps/yaml-0.2.5.tar.gz",
                     "libyaml source archive",
+                )),
+            },
+            {
+                "path": "source/static-deps/pcre2-10.47.tar.bz2",
+                "sha256": digest(regular(
+                    release_root / "source/static-deps/pcre2-10.47.tar.bz2",
+                    "PCRE2 source archive",
                 )),
             },
         ],

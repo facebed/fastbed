@@ -49,7 +49,11 @@ LINKED_CURL_LIBRARIES = [
     "lib/libbrotlicommon.a",
     "lib/libz.a",
 ]
-LINKED_STATIC_DEPS_LIBRARIES = ["lib/libmicrohttpd.a", "lib/libyaml.a"]
+LINKED_STATIC_DEPS_LIBRARIES = [
+    "lib/libmicrohttpd.a",
+    "lib/libyaml.a",
+    "lib/libpcre2-8.a",
+]
 LGPL_RELINK_LIBRARIES = [
     "curl-prefix/lib/libidn2.a",
     "curl-prefix/lib/libunistring.a",
@@ -566,6 +570,7 @@ def validate_static_deps_bundle(
     digest_keys = {
         "lib/libmicrohttpd.a": "libmicrohttpd_archive_sha256",
         "lib/libyaml.a": "libyaml_archive_sha256",
+        "lib/libpcre2-8.a": "pcre2_archive_sha256",
     }
     for relative, key in digest_keys.items():
         if manifest.get(key) != sums[relative]:
@@ -579,6 +584,7 @@ def validate_static_deps_bundle(
         (metadata_rel / "SOURCE-OFFER.txt").as_posix(),
         (metadata_rel / "licenses/libmicrohttpd-COPYING").as_posix(),
         (metadata_rel / "licenses/libyaml-License").as_posix(),
+        (metadata_rel / "licenses/pcre2-COPYING").as_posix(),
     ):
         if relative not in sums:
             raise SupplyChainError(
@@ -606,6 +612,13 @@ def validate_static_deps_bundle(
             "license_file": "libyaml-License",
             "archive": "lib/libyaml.a",
         },
+        "pcre2": {
+            "version": "10.47",
+            "source_sha256": inventory["static_deps_bundle"]
+                ["manifest_expectations"]["pcre2_source_sha256"],
+            "license_file": "pcre2-COPYING",
+            "archive": "lib/libpcre2-8.a",
+        },
     }
     if set(rows) != set(expected_rows):
         raise SupplyChainError("static dependency component set mismatch")
@@ -615,7 +628,7 @@ def validate_static_deps_bundle(
             raise SupplyChainError(
                 f"static dependency component metadata mismatch: {name}")
 
-    static_component_ids = {"libmicrohttpd", "libyaml"}
+    static_component_ids = {"libmicrohttpd", "libyaml", "pcre2"}
     for build_input in inventory["build_inputs"]:
         if build_input["component"] not in static_component_ids:
             continue
@@ -646,6 +659,9 @@ def expected_runtime_files(inventory: dict[str, Any]) -> set[str]:
     ].strip("/")
     paths = {
         "/usr/local/bin/fastbed",
+        "/etc/ssl/certs/ca-certificates.crt",
+        "/usr/local/share/fastbed-runtime/RUNTIME-MANIFEST.txt",
+        "/usr/local/share/fastbed-runtime/ALPINE-BUILD-PACKAGES",
         RUNTIME_RECEIPT_PATH,
         "/usr/local/share/fastbed/EMBEDDED-RESOURCES.json",
         f"/usr/local/{metadata}/BUILD-MANIFEST.txt",
@@ -660,6 +676,7 @@ def expected_runtime_files(inventory: dict[str, Any]) -> set[str]:
         f"/usr/local/{static_metadata}/SOURCE-OFFER.txt",
         f"/usr/local/{static_metadata}/licenses/libmicrohttpd-COPYING",
         f"/usr/local/{static_metadata}/licenses/libyaml-License",
+        f"/usr/local/{static_metadata}/licenses/pcre2-COPYING",
         f"/usr/local/{static_metadata}/rebuild/tools/build-static-deps.sh",
     }
     paths.update(
@@ -685,7 +702,7 @@ def expected_runtime_files(inventory: dict[str, Any]) -> set[str]:
     paths.update(
         f"/usr/local/{static_metadata}/{record['runtime_relative_path']}"
         for record in inventory["build_inputs"]
-        if record["component"] in {"libmicrohttpd", "libyaml"}
+        if record["component"] in {"libmicrohttpd", "libyaml", "pcre2"}
     )
     paths.update(
         component["runtime_license"]["path"]
@@ -708,6 +725,17 @@ def validate_runtime(
     image_id = runtime.get("image_id")
     if not isinstance(image_id, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
         raise SupplyChainError("runtime inventory has an invalid image ID")
+    runtime_profile = runtime.get("runtime")
+    if (
+        not isinstance(runtime_profile, dict)
+        or runtime_profile.get("kind") != "scratch-static"
+        or runtime_profile.get("profile") != "fastbed-scratch-static-v1"
+        or not re.fullmatch(
+            r"alpine:[^@]+@sha256:[0-9a-f]{64}",
+            str(runtime_profile.get("base_image", "")),
+        )
+    ):
+        raise SupplyChainError("runtime inventory is not the scratch-static profile")
 
     packages: dict[str, dict[str, str]] = {}
     required_fields = (
@@ -772,6 +800,14 @@ def validate_runtime(
                     f"{evidence['path']}"
                 )
     return packages, files
+
+
+def runtime_alpine_version(runtime: dict[str, Any]) -> str:
+    base_image = runtime["runtime"]["base_image"]
+    match = re.fullmatch(r"alpine:([^@]+)@sha256:[0-9a-f]{64}", base_image)
+    if not match:
+        raise SupplyChainError("runtime base image is not a pinned Alpine image")
+    return match.group(1)
 
 
 def validate_runtime_bundle_binding(
@@ -1382,6 +1418,7 @@ def make_cyclonedx(
     manifest: dict[str, str],
     bundle_digest: str,
     static_bundle_digest: str,
+    alpine_version: str,
     serial: str,
     timestamp: str,
 ) -> tuple[dict[str, Any], dict[str, str]]:
@@ -1406,7 +1443,7 @@ def make_cyclonedx(
                 "value": build_input["sha256"],
             }
         )
-    for static_component_id in ("libmicrohttpd", "libyaml"):
+    for static_component_id in ("libmicrohttpd", "libyaml", "pcre2"):
         static_ref = next(
             component["bom_ref"]
             for component in inventory["components"]
@@ -1418,8 +1455,6 @@ def make_cyclonedx(
             {"name": "fastbed:linkage", "value": "static"}
         )
 
-    alpine_package = runtime_packages["alpine-release"]
-    alpine_version = alpine_package["version"].removesuffix("-r0")
     for package in runtime_packages.values():
         component_id = f"runtime:{package['name']}"
         if component_id in ref_by_id:
@@ -1536,12 +1571,12 @@ def make_spdx(
     runtime_packages: dict[str, dict[str, str]],
     runtime_files: dict[str, str],
     source_digest: str,
+    alpine_version: str,
     serial: str,
     timestamp: str,
 ) -> dict[str, Any]:
     product = inventory["product"]
     declared = inventory["components"] + inventory["curl_bundle"]["components"]
-    alpine_version = runtime_packages["alpine-release"]["version"].removesuffix("-r0")
     packages: list[dict[str, Any]] = []
     by_id: dict[str, dict[str, Any]] = {}
 
@@ -1875,6 +1910,7 @@ def write_artifacts(
     )
     serial = str(uuid.uuid5(uuid.NAMESPACE_URL, seed))
     runtime_packages, runtime_files = validate_runtime(runtime, inventory)
+    alpine_version = runtime_alpine_version(runtime)
     cyclone, refs = make_cyclonedx(
         inventory,
         runtime_packages,
@@ -1884,6 +1920,7 @@ def write_artifacts(
         manifest,
         bundle_digest,
         static_bundle_digest,
+        alpine_version,
         serial,
         timestamp,
     )
@@ -1892,6 +1929,7 @@ def write_artifacts(
         runtime_packages,
         runtime_files,
         source_digest,
+        alpine_version,
         serial,
         timestamp,
     )
