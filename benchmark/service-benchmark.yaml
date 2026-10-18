@@ -1,0 +1,5 @@
+host: 127.0.0.1
+port: 39812
+timezone: 7
+banned_users: []
+notifier_webhook: ''

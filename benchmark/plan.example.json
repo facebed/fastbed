@@ -1,0 +1,213 @@
+{
+  "schema": "fastbed-benchmark-plan-v1",
+  "seed": 20261017,
+  "blocks": 5,
+  "source_root": "/home/pie/src/fastbed",
+  "host": "127.0.0.1",
+  "port": 39812,
+  "require_loopback_only": true,
+  "sample_interval_seconds": 0.05,
+  "quiet": {
+    "sample_seconds": 5.0,
+    "max_cpu_busy_fraction": 0.15,
+    "max_load1_per_cpu": 0.25,
+    "max_procs_running": 4
+  },
+  "affinity": {
+    "server": [2, 3, 4, 5],
+    "client": [6, 7],
+    "sidecars": [0, 1]
+  },
+  "cgroup": {
+    "parent": "/sys/fs/cgroup/benchmark.slice",
+    "required": false,
+    "server": {
+      "cpu.max": "max 100000",
+      "memory.max": "2147483648",
+      "pids.max": "512"
+    },
+    "client": {
+      "cpu.max": "max 100000",
+      "memory.max": "1073741824",
+      "pids.max": "64"
+    }
+  },
+  "server": {
+    "argv": [
+      "{binary}",
+      "--config",
+      "/ABS/benchmark-config.yaml",
+      "--assets",
+      "/home/pie/src/fastbed/assets",
+      "--crawler-db",
+      "/home/pie/src/fastbed/third_party/crawler-user-agents/crawler-user-agents.json",
+      "--workers",
+      "4",
+      "--replay-http-port",
+      "38080",
+      "--replay-https-port",
+      "38443"
+    ],
+    "cwd": "/home/pie/src/fastbed",
+    "env": {},
+    "ready_path": "/healthz",
+    "ready_status": 200,
+    "startup_timeout_seconds": 30,
+    "shutdown_timeout_seconds": 30,
+    "expected_exit": 0
+  },
+  "sidecars": [
+    {
+      "name": "saved-corpus-broker",
+      "argv": [
+        "python3",
+        "/home/pie/src/fastbed/e2e/concurrency_broker.py",
+        "/ABS/corpus",
+        "--address",
+        "127.0.0.1",
+        "--http-port",
+        "38080",
+        "--https-port",
+        "38443",
+        "--cert",
+        "/ABS/fixture-cert.pem",
+        "--key",
+        "/ABS/fixture-key.pem"
+      ],
+      "cwd": "/home/pie/src/fastbed",
+      "env": {},
+      "ready": {
+        "host": "127.0.0.1",
+        "port": 38080,
+        "timeout_seconds": 30
+      },
+      "shutdown_timeout_seconds": 10,
+      "expected_exit": 0
+    }
+  ],
+  "variants": [
+    {
+      "name": "control",
+      "binary": "/ABS/control/fastbed",
+      "args": [],
+      "env": {}
+    },
+    {
+      "name": "current",
+      "binary": "/ABS/current/fastbed",
+      "args": [],
+      "env": {}
+    },
+    {
+      "name": "native",
+      "binary": "/ABS/native/fastbed",
+      "args": [],
+      "env": {}
+    },
+    {
+      "name": "ir-pgo",
+      "binary": "/ABS/ir-pgo/fastbed",
+      "args": [],
+      "env": {}
+    },
+    {
+      "name": "bolt",
+      "binary": "/ABS/bolt/fastbed.bolt",
+      "args": [],
+      "env": {}
+    },
+    {
+      "name": "allocator",
+      "binary": "/ABS/current/fastbed",
+      "args": [],
+      "env": {
+        "LD_PRELOAD": "/ABS/lib/libjemalloc.so.2"
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "cold-mixed",
+      "kind": "cold",
+      "requests_file": "/ABS/workloads/medium-hard.tsv",
+      "requests": 2000,
+      "concurrency": 32,
+      "mode": "closed",
+      "connection_mode": "keepalive",
+      "source_addresses": ["127.0.0.2", "127.0.0.3"],
+      "server_args": []
+    },
+    {
+      "name": "nocache-mixed",
+      "kind": "nocache",
+      "requests_file": "/ABS/workloads/medium-hard.tsv",
+      "requests": 2000,
+      "concurrency": 32,
+      "mode": "closed",
+      "connection_mode": "keepalive",
+      "server_args": []
+    },
+    {
+      "name": "warm-mixed",
+      "kind": "warm",
+      "requests_file": "/ABS/workloads/medium-hard.tsv",
+      "warmup_requests": 512,
+      "requests": 4000,
+      "concurrency": 64,
+      "mode": "closed",
+      "connection_mode": "keepalive",
+      "server_args": []
+    },
+    {
+      "name": "singleflight-race",
+      "kind": "singleflight",
+      "requests_file": "/ABS/workloads/singleflight.tsv",
+      "requests": 128,
+      "concurrency": 128,
+      "mode": "open",
+      "rate": 20000,
+      "connection_mode": "fin",
+      "server_args": [],
+      "after_ready": [
+        ["/ABS/bin/broker-control", "reset-open", "521"]
+      ],
+      "after_measure": [
+        ["/ABS/bin/broker-control", "assert-singleflight", "1"]
+      ]
+    },
+    {
+      "name": "slow-upstream",
+      "kind": "slow",
+      "requests_file": "/ABS/workloads/singleflight.tsv",
+      "requests": 256,
+      "concurrency": 64,
+      "mode": "open",
+      "rate": 250,
+      "connection_mode": "keepalive",
+      "server_args": [],
+      "after_ready": [
+        ["/ABS/bin/broker-control", "delay-ms", "250"]
+      ],
+      "after_measure": [
+        ["/ABS/bin/broker-control", "delay-ms", "0"]
+      ]
+    },
+    {
+      "name": "queue-saturation",
+      "kind": "queue",
+      "requests_file": "/ABS/workloads/queue-with-overload.tsv",
+      "requests": 512,
+      "concurrency": 256,
+      "mode": "open",
+      "rate": 50000,
+      "connection_mode": "fin",
+      "server_args": [],
+      "after_ready": [
+        ["/ABS/bin/broker-control", "gate-close-auto-release-ms", "250"]
+      ],
+      "after_measure": [
+        ["/ABS/bin/broker-control", "assert-queue-contract"]
+      ]
+    }
+  ]
+}

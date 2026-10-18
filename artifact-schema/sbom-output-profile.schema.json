@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fastbed.invalid/schema/sbom-output-profile-1.json",
+  "title": "Fastbed generated supply-chain artifact set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generator",
+    "generator_sha256",
+    "verifier_sha256",
+    "inventory_sha256",
+    "source_tree_sha256",
+    "source_files_sha256",
+    "curl_bundle_sha256",
+    "static_deps_bundle_sha256",
+    "runtime_inventory_sha256",
+    "build_receipt_sha256",
+    "lgpl_relink_archive_sha256",
+    "image_id",
+    "target_arch",
+    "release_status",
+    "release_reason",
+    "evidence",
+    "documents"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "generator": { "const": "tools/generate-sbom-vex.py" },
+    "generator_sha256": { "$ref": "#/$defs/sha256" },
+    "verifier_sha256": { "$ref": "#/$defs/sha256" },
+    "inventory_sha256": { "$ref": "#/$defs/sha256" },
+    "source_tree_sha256": { "$ref": "#/$defs/sha256" },
+    "source_files_sha256": { "$ref": "#/$defs/sha256" },
+    "curl_bundle_sha256": { "$ref": "#/$defs/sha256" },
+    "static_deps_bundle_sha256": { "$ref": "#/$defs/sha256" },
+    "runtime_inventory_sha256": { "$ref": "#/$defs/sha256" },
+    "build_receipt_sha256": { "$ref": "#/$defs/sha256" },
+    "lgpl_relink_archive_sha256": { "$ref": "#/$defs/sha256" },
+    "image_id": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "target_arch": { "enum": ["amd64", "arm64"] },
+    "release_status": {
+      "const": "production-candidate-project-license-noassertion"
+    },
+    "release_reason": { "type": "string", "minLength": 1 },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "sha256"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^CVE-[0-9]{4}-[0-9]+$" },
+          "path": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "documents": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "format", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "format": {
+            "enum": ["CycloneDX-1.6", "SPDX-2.3", "CycloneDX-VEX-1.6"]
+          },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

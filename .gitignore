@@ -1,0 +1,39 @@
+# Build and verification output
+/build*/
+/artifacts/
+/http_loadgen.plist
+/.cache/
+
+# Local configuration and secrets
+/config.yaml
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Compiler and profiler output
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+perf.data*
+callgrind.out.*
+core
+core.*
+
+# Editor and platform state
+.clangd/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+CMakeUserPresets.json
+

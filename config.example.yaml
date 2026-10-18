@@ -1,0 +1,9 @@
+# Every entry is optional. These values match Fastbed's built-in defaults.
+host: "0.0.0.0"
+port: 9812
+timezone: 7
+banned_users: []
+
+# Keep secrets in config.yaml, which Git ignores. Leave this empty to disable
+# notifications.
+notifier_webhook: ""

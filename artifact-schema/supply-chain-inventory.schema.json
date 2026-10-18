@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fastbed.invalid/schema/supply-chain-inventory-1.json",
+  "title": "Fastbed manual SBOM and VEX inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "document_created",
+    "release_status",
+    "release_reason",
+    "product",
+    "components",
+    "static_deps_bundle",
+    "curl_bundle",
+    "build_inputs",
+    "patches",
+    "vulnerabilities",
+    "relationships",
+    "required_runtime_packages"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "document_created": { "type": "string", "format": "date-time" },
+    "release_status": {
+      "const": "production-candidate-project-license-noassertion"
+    },
+    "release_reason": { "type": "string", "minLength": 1 },
+    "product": { "$ref": "#/$defs/product" },
+    "components": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "static_deps_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata_relative_path",
+        "manifest_expectations",
+        "libraries",
+        "source_archives"
+      ],
+      "properties": {
+        "metadata_relative_path": { "type": "string", "minLength": 1 },
+        "manifest_expectations": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "libraries": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^lib/.+\\.a$" }
+        },
+        "source_archives": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^source/static-deps/.+" }
+        }
+      }
+    },
+    "curl_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata_relative_path",
+        "manifest_expectations",
+        "components",
+        "additional_license_files"
+      ],
+      "properties": {
+        "metadata_relative_path": { "type": "string", "minLength": 1 },
+        "manifest_expectations": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "components": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": { "$ref": "#/$defs/bundleComponent" }
+        },
+        "additional_license_files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/localFile" }
+        }
+      }
+    },
+    "patches": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/patch" }
+    },
+    "build_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "component", "path", "sha256", "purpose", "manifest_hash_key", "runtime_relative_path"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "component": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "purpose": { "type": "string", "minLength": 1 },
+          "manifest_hash_key": { "type": "string", "minLength": 1 }
+          ,
+          "runtime_relative_path": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "vulnerabilities": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "$ref": "#/$defs/vulnerability" }
+    },
+    "relationships": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "required_runtime_packages": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "localFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "version",
+        "bom_ref",
+        "purl",
+        "source_url",
+        "license",
+        "source_paths",
+        "version_evidence"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "bom_ref": { "type": "string", "minLength": 1 },
+        "purl": { "type": "string", "pattern": "^pkg:" },
+        "source_url": { "type": "string", "minLength": 1 },
+        "license": { "type": "string", "minLength": 1 },
+        "source_paths": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "version_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "literal"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "literal": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "componentBase": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "version",
+        "type",
+        "bom_ref",
+        "purl",
+        "source_url",
+        "download_url",
+        "source_sha256",
+        "license",
+        "security_disposition"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": ["application", "library", "data", "operating-system"]
+        },
+        "bom_ref": { "type": "string", "minLength": 1 },
+        "purl": { "type": "string", "pattern": "^pkg:" },
+        "source_url": { "type": "string", "minLength": 1 },
+        "download_url": { "type": "string", "minLength": 1 },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "license": { "type": "string", "minLength": 1 },
+        "security_disposition": {
+          "enum": [
+            "fixed-by-verified-backport",
+            "fixed-by-upstream-version",
+            "no-named-finding-in-this-vex"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "component": {
+      "allOf": [
+        { "$ref": "#/$defs/componentBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["local_files"],
+          "properties": {
+            "id": true,
+            "name": true,
+            "version": true,
+            "type": true,
+            "bom_ref": true,
+            "purl": true,
+            "source_url": true,
+            "download_url": true,
+            "source_sha256": true,
+            "license": true,
+            "security_disposition": true,
+            "description": true,
+            "local_files": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/localFile" }
+            },
+            "declaration_evidence": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "literals"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "literals": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string", "minLength": 1 }
+                }
+              }
+            },
+            "runtime_license": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "pattern": "^/" },
+                "sha256": { "$ref": "#/$defs/sha256" }
+              }
+            },
+            "runtime_evidence": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "sha256"],
+                "properties": {
+                  "path": { "type": "string", "pattern": "^/" },
+                  "sha256": { "$ref": "#/$defs/sha256" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "bundleComponent": {
+      "allOf": [
+        { "$ref": "#/$defs/componentBase" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["manifest_name", "manifest_version", "license_file", "license_sha256"],
+          "properties": {
+            "id": true,
+            "name": true,
+            "version": true,
+            "type": true,
+            "bom_ref": true,
+            "purl": true,
+            "source_url": true,
+            "download_url": true,
+            "source_sha256": true,
+            "license": true,
+            "security_disposition": true,
+            "description": true,
+            "manifest_name": { "type": "string", "minLength": 1 },
+            "manifest_version": { "type": "string", "minLength": 1 },
+            "license_file": { "type": "string", "minLength": 1 }
+            ,
+            "license_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      ]
+    },
+    "patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "component",
+        "path",
+        "sha256",
+        "purpose",
+        "upstream_commit",
+        "upstream_url",
+        "upstream_patch_sha256",
+        "fix_commit_manifest_key",
+        "manifest_hash_key",
+        "patched_file_manifest_key"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "component": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "purpose": { "type": "string", "minLength": 1 },
+        "upstream_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "upstream_url": { "type": "string", "pattern": "^https://" },
+        "upstream_patch_sha256": { "$ref": "#/$defs/sha256" },
+        "fix_commit_manifest_key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commit", "url", "patch_sha256", "manifest_key"],
+            "properties": {
+              "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+              "url": { "type": "string", "pattern": "^https://" },
+              "patch_sha256": { "$ref": "#/$defs/sha256" }
+              ,
+              "manifest_key": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              }
+            }
+          }
+        },
+        "manifest_hash_key": { "type": "string", "minLength": 1 },
+        "patched_file_manifest_key": { "type": "string", "minLength": 1 }
+      }
+    },
+    "vulnerability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "component",
+        "severity",
+        "resolution",
+        "state",
+        "response",
+        "description",
+        "advisory_url",
+        "fixed_version",
+        "fixed_commit",
+        "version_evidence_manifest_key",
+        "version_evidence_value",
+        "evidence_manifest_keys",
+        "detail"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CVE-[0-9]{4}-[0-9]+$" },
+        "component": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["low", "medium", "high", "critical"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 10 },
+        "vector": { "type": "string", "minLength": 1 },
+        "cwe": { "type": "integer", "minimum": 1 },
+        "resolution": {
+          "enum": ["upstream-version", "verified-backport"]
+        },
+        "state": { "enum": ["resolved", "resolved_with_pedigree"] },
+        "response": { "const": ["update"] },
+        "description": { "type": "string", "minLength": 1 },
+        "advisory_url": { "type": "string", "pattern": "^https://" },
+        "fixed_version": { "type": "string", "minLength": 1 },
+        "fixed_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "version_evidence_manifest_key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "version_evidence_value": { "type": "string", "minLength": 1 },
+        "evidence_manifest_keys": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "detail": { "type": "string", "minLength": 1 }
+        ,
+        "evidence_artifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "patch_id": { "type": "string", "minLength": 1 }
+      }
+      ,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "resolution": { "const": "verified-backport" } }
+          },
+          "then": {
+            "required": ["patch_id"],
+            "properties": {
+              "state": { "const": "resolved_with_pedigree" }
+            }
+          },
+          "else": {
+            "properties": { "state": { "const": "resolved" } },
+            "not": { "required": ["patch_id"] }
+          }
+        }
+      ]
+    }
+  }
+}

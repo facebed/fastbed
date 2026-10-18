@@ -1,0 +1,26 @@
+* text=auto eol=lf whitespace=-blank-at-eof
+
+*.c text eol=lf
+*.h text eol=lf
+*.inc text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.tsv text eol=lf
+*.html text eol=lf
+*.patch text eol=lf -whitespace
+*.plist text eol=lf
+*.body text eol=lf
+
+*.ico binary
+*.png binary
+*.gz binary
+*.xz binary
+*.zst binary
+*.profraw binary
+*.profdata binary

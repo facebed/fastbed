@@ -1,0 +1,326 @@
+{
+  "$schema": "supply-chain-inventory.schema.json",
+  "schema_version": 1,
+  "document_created": "2026-10-18T00:00:00Z",
+  "release_status": "production-candidate-project-license-noassertion",
+  "release_reason": "The curl 8.23 HTTP/2-only dependency closure and post-link evidence are production-integrated; Fastbed's project license remains NOASSERTION and must be chosen before external distribution.",
+  "product": {
+    "id": "fastbed",
+    "name": "fastbed",
+    "version": "0.1.0",
+    "bom_ref": "pkg:generic/fastbed@0.1.0",
+    "purl": "pkg:generic/fastbed@0.1.0",
+    "source_url": "urn:fastbed:source-tree",
+    "license": "NOASSERTION",
+    "source_paths": [
+      "CMakeLists.txt",
+      "assets",
+      "cmake",
+      "include",
+      "src",
+      "tools/build-static-deps.sh",
+      "tools/embed-resources.py",
+      "third_party/crawler-user-agents",
+      "third_party/yyjson"
+    ],
+    "version_evidence": {
+      "path": "CMakeLists.txt",
+      "literal": "project(fastbed VERSION 0.1.0 LANGUAGES C)"
+    }
+  },
+  "components": [
+    {
+      "id": "yyjson",
+      "name": "yyjson",
+      "version": "0.13.0",
+      "type": "library",
+      "bom_ref": "pkg:github/ibireme/yyjson@0.13.0",
+      "purl": "pkg:github/ibireme/yyjson@0.13.0",
+      "source_url": "https://github.com/ibireme/yyjson/tree/6447536015f3d600f3d65323b10976103b337ca7",
+      "download_url": "https://github.com/ibireme/yyjson/archive/6447536015f3d600f3d65323b10976103b337ca7.tar.gz",
+      "source_sha256": "13d53411c9d818836a2dc0b3f4be40c34ee4e0fcd21ff903e0aebbfd52e9e08d",
+      "license": "MIT",
+      "security_disposition": "no-named-finding-in-this-vex",
+      "description": "Vendored JSON parser at tag 0.13.0 and commit 6447536015f3d600f3d65323b10976103b337ca7.",
+      "local_files": [
+        { "path": "third_party/yyjson/yyjson.c", "sha256": "d2d58ef0a3b2267862dc363832c4f3185fd375aea933d5d3419d1a940d6ece2e" },
+        { "path": "third_party/yyjson/yyjson.h", "sha256": "ef803cda5c06b8962face6dfa39c3284b3bcf3e73f4d7317664690cc779679ca" },
+        { "path": "third_party/yyjson/LICENSE", "sha256": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947" }
+      ],
+      "declaration_evidence": {
+        "path": "third_party/yyjson/yyjson.h",
+        "literals": ["#define YYJSON_VERSION_STRING \"0.13.0\""]
+      },
+      "runtime_license": {
+        "path": "/usr/share/licenses/fastbed/yyjson-LICENSE",
+        "sha256": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947"
+      }
+    },
+    {
+      "id": "crawler-user-agents",
+      "name": "crawler-user-agents",
+      "version": "1.59.0",
+      "type": "data",
+      "bom_ref": "pkg:pypi/crawler-user-agents@1.59.0",
+      "purl": "pkg:pypi/crawler-user-agents@1.59.0",
+      "source_url": "https://pypi.org/project/crawler-user-agents/1.59.0/",
+      "download_url": "https://files.pythonhosted.org/packages/89/de/83854dfe46685dc765ef2334bcc3ba0b65b25346604f3f09f503c4201c80/crawler_user_agents-1.59.0-py3-none-any.whl",
+      "source_sha256": "59f9ad25cf1774111a59b77a8e993424495374d709cbcf065064b225d975524c",
+      "license": "MIT",
+      "security_disposition": "no-named-finding-in-this-vex",
+      "description": "Vendored crawler routing data, byte-identical to the file in the 1.59.0 wheel.",
+      "local_files": [
+        { "path": "third_party/crawler-user-agents/crawler-user-agents.json", "sha256": "4e414e18ed3f64b9b8298a9f042c83e1ccf54414d8a742fb1f0ec9441d5170e4" },
+        { "path": "third_party/crawler-user-agents/LICENSE", "sha256": "bd1d54278c29a12c1c3009259965a620c59363b8d7f5740d98d3fc38f319d7a5" }
+      ],
+      "declaration_evidence": {
+        "path": "third_party/README.md",
+        "literals": ["crawler-user-agents | Python package `1.59.0`"]
+      },
+      "runtime_license": {
+        "path": "/usr/share/licenses/fastbed/crawler-user-agents-LICENSE",
+        "sha256": "bd1d54278c29a12c1c3009259965a620c59363b8d7f5740d98d3fc38f319d7a5"
+      }
+    },
+    {
+      "id": "libmicrohttpd",
+      "name": "GNU libmicrohttpd",
+      "version": "1.0.10",
+      "type": "library",
+      "bom_ref": "pkg:generic/gnu-libmicrohttpd@1.0.10",
+      "purl": "pkg:generic/gnu-libmicrohttpd@1.0.10",
+      "source_url": "https://www.gnu.org/software/libmicrohttpd/",
+      "download_url": "https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-1.0.10.tar.gz",
+      "source_sha256": "04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685",
+      "license": "LGPL-2.1-or-later OR eCos-2.0",
+      "security_disposition": "no-named-finding-in-this-vex",
+      "description": "Built from the pinned upstream source archive and statically embedded in Fastbed; LGPL relink material is emitted per architecture.",
+      "local_files": [],
+      "declaration_evidence": {
+        "path": "tools/build-static-deps.sh",
+        "literals": [
+          "https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-1.0.10.tar.gz",
+          "04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685",
+          "--enable-static",
+          "--disable-shared",
+          "--enable-https=no"
+        ]
+      },
+      "runtime_license": {
+        "path": "/usr/share/licenses/libmicrohttpd/COPYING",
+        "sha256": "7399547209438c93f9b90297954698773d4846cea44cde5ca982c84c45952a3b"
+      },
+      "runtime_evidence": [
+        { "path": "/usr/local/share/fastbed-static-deps/SOURCE-OFFER.txt", "sha256": "75c9e6dcfde6ed077ae88a41f44bb298486b09a741c8bc58b6e0e46085c60bb3" },
+        { "path": "/usr/local/share/fastbed-source-offers/libmicrohttpd-1.0.10.tar.gz", "sha256": "04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685" }
+      ]
+    },
+    {
+      "id": "libyaml",
+      "name": "LibYAML",
+      "version": "0.2.5",
+      "type": "library",
+      "bom_ref": "pkg:github/yaml/libyaml@0.2.5",
+      "purl": "pkg:github/yaml/libyaml@0.2.5",
+      "source_url": "https://github.com/yaml/libyaml",
+      "download_url": "https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz",
+      "source_sha256": "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4",
+      "license": "MIT",
+      "security_disposition": "no-named-finding-in-this-vex",
+      "description": "Built from the pinned upstream source archive and statically embedded in Fastbed.",
+      "local_files": [],
+      "declaration_evidence": {
+        "path": "tools/build-static-deps.sh",
+        "literals": [
+          "https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz",
+          "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4",
+          "--enable-static",
+          "--disable-shared"
+        ]
+      },
+      "runtime_license": {
+        "path": "/usr/share/licenses/libyaml/License",
+        "sha256": "c40112449f254b9753045925248313e9270efa36d226b22d82d4cc6c43c57f29"
+      },
+      "runtime_evidence": [
+        { "path": "/usr/local/share/fastbed-source-offers/yaml-0.2.5.tar.gz", "sha256": "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4" }
+      ]
+    }
+  ],
+  "static_deps_bundle": {
+    "metadata_relative_path": "share/fastbed-static-deps",
+    "manifest_expectations": {
+      "profile": "fastbed-static-deps-v1",
+      "source_date_epoch": "1774606016",
+      "libmicrohttpd_version": "1.0.10",
+      "libmicrohttpd_source_sha256": "04bfe8ef75db7d629a33de767599765cecadc56274a39822d5d081030d577685",
+      "libyaml_version": "0.2.5",
+      "libyaml_source_sha256": "c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4",
+      "builder_sha256": "b7cd7ddc7abff4b6d2b1b4d2fde7040e2236a98d09347bb3886d1706a19b4d26"
+    },
+    "libraries": ["lib/libmicrohttpd.a", "lib/libyaml.a"],
+    "source_archives": [
+      "source/static-deps/libmicrohttpd-1.0.10.tar.gz",
+      "source/static-deps/yaml-0.2.5.tar.gz"
+    ]
+  },
+  "curl_bundle": {
+    "metadata_relative_path": "share/fastbed-curl-impersonate",
+    "manifest_expectations": {
+      "profile": "http2-only",
+      "source_date_epoch": "1774606016",
+      "curl_version": "8.23.0-IMPERSONATE",
+      "protocols": "http,https",
+      "http3": "false",
+      "resolver_backend": "threaded",
+      "curl_source_sha256": "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5",
+      "curl_source_signature_sha256": "dba1562fec2bf698a1226054e6757940e4bf2ab87b3b222a5e7b91348f0b82e2",
+      "curl_impersonate_source_commit": "9607b22ccf6c440e560c5f8ad5292b8044bb6dd7",
+      "curl_impersonate_source_sha256": "19bcc1aa84a9a69b2ff471af580cae5970baf15e13f77271b0b66c86baeaa131",
+      "curl_production_patch_sha256": "5b7034eb94c458eac87a775b6306401b875d7baae13f1aecc443554c8e65c083",
+      "curl_http2_source_sha256": "5f492fb8c930277864630c3f6661a437fe1d77338b782ceacb6c90ea25d84b44",
+      "curl_easy_source_sha256": "34a5c20e944ad4fc2c369984d1cd149a2c998cb775a77d668faf17ceb005bcc0",
+      "curl_impersonate_source_file_sha256": "237e7dd71737ef7fd59579ff33d5c448c2f6151ad7788b7ae586afe91c9d22fa",
+      "boringssl_revision": "673e61fc215b178a90c0e67858bbf162c8158993",
+      "boringssl_source_sha256": "edb7d61e8de3f791070172723ee41fbc550fb55080cdb187bb4a05e60e059a22",
+      "boringssl_base_patch_sha256": "f6315235ea19778fbca8b6544732024f854f38eaa5a600d621f1ac55b4e22424",
+      "boringssl_security_patch_sha256": "2c9277a0576c6ed943386490c1ed53ba2e5b8ccef2f1ec4c0c326e4e2177c2dd",
+      "boringssl_security_prerequisite_commit": "5386d908a663a424d154cbae7f76f2266c60c2fe",
+      "boringssl_security_fix_commit": "9b639f5b3b086508c03f6a4a1792e4a6043777ac",
+      "boringssl_patched_x509_vfy_sha256": "b81cc94a5f2bec83cef2c5fd566aa7e05712c87d2fe20e6d8eeca79dd1cd9233",
+      "nghttp2_version": "1.68.1",
+      "nghttp2_source_sha256": "b761b53cb64916657ea84437973d508fd675e96bb2feb9593a1e43d1959abe95",
+      "nghttp2_source_signature_sha256": "95f96ddec895cbde8afce6b10ac036240cb79bde1fc0f693308e95bcbb6e6f7c",
+      "nghttp2_priority_compat_patch_sha256": "bf30fc417c26afcaafe732629073db13fc1563edcd7964ee7c1fbf300f7eb3f3",
+      "nghttp2_patched_submit_sha256": "159fdac71e2f8df2601b07a2c0afb7a90ce6d572fb110f8dc2a509d622f32da6",
+      "nghttp2_security_session_sha256": "8d9c0be1199ab6181d0998a78e49dc34fdbdb75d27922f2a4f66c923b1fd557a",
+      "brotli_patch_sha256": "d59ec1994ae6285222f65dd7192c2cbcbc0d0ae6c85eb5fce1cae735010f4d4f",
+      "curl_version_output_sha256": "5c7c2b454fd35aac898ba1645f5442c88f2f6db29f50606658bb76d5ab98eaa7",
+      "curl_easy_impersonate_probe": "0,0,43",
+      "builder_sha256": "09f1a96151822bd4395375a9f58f2b3b5a2fe92fd9e4d7d769824d8d8774e01f"
+    },
+    "components": [
+      {
+        "id": "curl-impersonate", "name": "curl-impersonate", "version": "1.5.2+git.9607b22ccf6c440e560c5f8ad5292b8044bb6dd7", "type": "library",
+        "bom_ref": "pkg:github/lexiforest/curl-impersonate@9607b22ccf6c440e560c5f8ad5292b8044bb6dd7", "purl": "pkg:github/lexiforest/curl-impersonate@9607b22ccf6c440e560c5f8ad5292b8044bb6dd7",
+        "source_url": "https://github.com/lexiforest/curl-impersonate/tree/9607b22ccf6c440e560c5f8ad5292b8044bb6dd7", "download_url": "https://github.com/lexiforest/curl-impersonate/archive/9607b22ccf6c440e560c5f8ad5292b8044bb6dd7.tar.gz",
+        "source_sha256": "19bcc1aa84a9a69b2ff471af580cae5970baf15e13f77271b0b66c86baeaa131", "license": "MIT", "security_disposition": "no-named-finding-in-this-vex",
+        "description": "Source-built curl-impersonate v1.5.2 integration applied to the pinned curl 8.23.0 HTTP/2-only closure.",
+        "manifest_name": "curl-impersonate", "manifest_version": "9607b22ccf6c440e560c5f8ad5292b8044bb6dd7", "license_file": "curl-impersonate-LICENSE", "license_sha256": "7d0c5f4b5b4c27299ad6759798772b866b3559ac5edb23845f36328eb734376d"
+      },
+      {
+        "id": "curl", "name": "curl", "version": "8.23.0-IMPERSONATE", "type": "library",
+        "bom_ref": "pkg:generic/curl@8.23.0?qualifier=impersonate", "purl": "pkg:generic/curl@8.23.0?qualifier=impersonate",
+        "source_url": "https://github.com/curl/curl/tree/curl-8_23_0", "download_url": "https://curl.se/download/curl-8.23.0.tar.xz",
+        "source_sha256": "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5", "license": "curl", "security_disposition": "fixed-by-upstream-version",
+        "description": "curl 8.23.0, which upstream identifies as not affected by CVE-2026-92392, plus the browser-impersonation integration patch.",
+        "manifest_name": "curl", "manifest_version": "curl-8_23_0", "license_file": "curl-COPYING", "license_sha256": "82f2f4427d6545ee5aaac4f0b80428da6cc8ba41c2cf5da3a03680ec327b9681"
+      },
+      {
+        "id": "boringssl", "name": "BoringSSL", "version": "git.673e61fc215b178a90c0e67858bbf162c8158993+fastbed.cve-2026-35189", "type": "library",
+        "bom_ref": "pkg:github/google/boringssl@673e61fc215b178a90c0e67858bbf162c8158993?qualifier=fastbed-cve-2026-35189-backport", "purl": "pkg:github/google/boringssl@673e61fc215b178a90c0e67858bbf162c8158993?qualifier=fastbed-cve-2026-35189-backport",
+        "source_url": "https://github.com/google/boringssl/tree/673e61fc215b178a90c0e67858bbf162c8158993", "download_url": "https://github.com/google/boringssl/archive/673e61fc215b178a90c0e67858bbf162c8158993.zip",
+        "source_sha256": "edb7d61e8de3f791070172723ee41fbc550fb55080cdb187bb4a05e60e059a22", "license": "Apache-2.0", "security_disposition": "fixed-by-verified-backport",
+        "description": "Pinned BoringSSL revision with the required upstream prerequisite and CVE-2026-35189 fix backported together.",
+        "manifest_name": "BoringSSL", "manifest_version": "673e61fc215b178a90c0e67858bbf162c8158993", "license_file": "boringssl-LICENSE", "license_sha256": "005fc765ddc5115da796cca915baa9557abae13ff35e0a47c47affc56f6c414d"
+      },
+      {
+        "id": "brotli", "name": "brotli", "version": "1.2.0", "type": "library", "bom_ref": "pkg:github/google/brotli@1.2.0", "purl": "pkg:github/google/brotli@1.2.0",
+        "source_url": "https://github.com/google/brotli/tree/v1.2.0", "download_url": "https://github.com/google/brotli/archive/refs/tags/v1.2.0.tar.gz", "source_sha256": "816c96e8e8f193b40151dad7e8ff37b1221d019dbcb9c35cd3fadbfe6477dfec",
+        "license": "MIT", "security_disposition": "no-named-finding-in-this-vex", "description": "Brotli decoder and common libraries linked into the curl static closure.", "manifest_name": "brotli", "manifest_version": "1.2.0", "license_file": "brotli-LICENSE", "license_sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+      },
+      {
+        "id": "nghttp2", "name": "nghttp2", "version": "1.68.1", "type": "library", "bom_ref": "pkg:github/nghttp2/nghttp2@1.68.1", "purl": "pkg:github/nghttp2/nghttp2@1.68.1",
+        "source_url": "https://github.com/nghttp2/nghttp2/tree/v1.68.1", "download_url": "https://github.com/nghttp2/nghttp2/releases/download/v1.68.1/nghttp2-1.68.1.tar.bz2", "source_sha256": "b761b53cb64916657ea84437973d508fd675e96bb2feb9593a1e43d1959abe95",
+        "license": "MIT", "security_disposition": "fixed-by-upstream-version", "description": "nghttp2 1.68.1, the upstream release that fixes CVE-2026-27135; a non-security compatibility patch restores legacy browser-priority submission.", "manifest_name": "nghttp2", "manifest_version": "1.68.1", "license_file": "nghttp2-COPYING", "license_sha256": "6b94f3abc1aabd0c72a7c7d92a77f79dda7c8a0cb3df839a97890b4116a2de2a"
+      },
+      {
+        "id": "zlib-static", "name": "zlib", "version": "1.3.2", "type": "library", "bom_ref": "pkg:generic/zlib@1.3.2?qualifier=curl-static", "purl": "pkg:generic/zlib@1.3.2?qualifier=curl-static",
+        "source_url": "https://github.com/madler/zlib/tree/v1.3.2", "download_url": "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz", "source_sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+        "license": "Zlib", "security_disposition": "no-named-finding-in-this-vex", "description": "zlib linked into the curl static closure; distinct from Alpine's runtime zlib package.", "manifest_name": "zlib", "manifest_version": "1.3.2", "license_file": "zlib-LICENSE", "license_sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"
+      },
+      {
+        "id": "zstd", "name": "zstd", "version": "1.5.7", "type": "library", "bom_ref": "pkg:github/facebook/zstd@1.5.7", "purl": "pkg:github/facebook/zstd@1.5.7",
+        "source_url": "https://github.com/facebook/zstd/tree/v1.5.7", "download_url": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz", "source_sha256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+        "license": "BSD-3-Clause", "security_disposition": "no-named-finding-in-this-vex", "description": "Zstandard decompressor linked into the curl static closure.", "manifest_name": "zstd", "manifest_version": "1.5.7", "license_file": "zstd-LICENSE", "license_sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+      },
+      {
+        "id": "libunistring", "name": "GNU libunistring", "version": "1.4.2", "type": "library", "bom_ref": "pkg:generic/gnu-libunistring@1.4.2", "purl": "pkg:generic/gnu-libunistring@1.4.2",
+        "source_url": "https://www.gnu.org/software/libunistring/", "download_url": "https://ftp.gnu.org/gnu/libunistring/libunistring-1.4.2.tar.xz", "source_sha256": "5b46e74377ed7409c5b75e7a96f95377b095623b689d8522620927964a41499c",
+        "license": "LGPL-3.0-or-later", "security_disposition": "no-named-finding-in-this-vex", "description": "Static Unicode dependency of libidn2; LGPL relink material is emitted per architecture.", "manifest_name": "libunistring", "manifest_version": "1.4.2", "license_file": "libunistring-COPYING.LIB", "license_sha256": "a853c2ffec17057872340eee242ae4d96cbf2b520ae27d903e1b2fef1a5f9d1c"
+      },
+      {
+        "id": "libidn2", "name": "GNU libidn2", "version": "2.3.8", "type": "library", "bom_ref": "pkg:generic/gnu-libidn2@2.3.8", "purl": "pkg:generic/gnu-libidn2@2.3.8",
+        "source_url": "https://www.gnu.org/software/libidn/", "download_url": "https://ftp.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz", "source_sha256": "f557911bf6171621e1f72ff35f5b1825bb35b52ed45325dcdee931e5d3c0787a",
+        "license": "LGPL-3.0-or-later", "security_disposition": "no-named-finding-in-this-vex", "description": "Static IDN dependency of curl; LGPL relink material is emitted per architecture.", "manifest_name": "libidn2", "manifest_version": "2.3.8", "license_file": "libidn2-COPYING.LESSERv3", "license_sha256": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+      }
+    ],
+    "additional_license_files": [
+      { "path": "libunistring-COPYING", "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986" },
+      { "path": "libidn2-COPYING", "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986" },
+      { "path": "libidn2-COPYING.unicode", "sha256": "01d621eef165cf4d3d3dbb737aa0699178d94c6f18cf87e9dde6db3ca7790f46" },
+      { "path": "libidn2-COPYINGv2", "sha256": "edaef632cbb643e4e7a221717a6c441a4c1a7c918e6e4d56debc3d8739b233f6" }
+    ]
+  },
+  "build_inputs": [
+    {
+      "id": "curl-production-integration", "component": "curl-impersonate", "path": "third_party/curl-impersonate/patches/0001-curl-8.23.0-v1.5.2-production.patch", "sha256": "5b7034eb94c458eac87a775b6306401b875d7baae13f1aecc443554c8e65c083",
+      "purpose": "Apply the browser-impersonation integration to upstream curl 8.23.0 while retaining only HTTP and HTTPS.", "manifest_hash_key": "curl_production_patch_sha256", "runtime_relative_path": "rebuild/third_party/curl-impersonate/patches/0001-curl-8.23.0-v1.5.2-production.patch"
+    },
+    {
+      "id": "boringssl-v1.5.2-base-integration", "component": "boringssl", "path": "third_party/curl-impersonate/patches/0002-boringssl-v1.5.2-base.patch", "sha256": "f6315235ea19778fbca8b6544732024f854f38eaa5a600d621f1ac55b4e22424",
+      "purpose": "Apply the curl-impersonate v1.5.2 BoringSSL integration to the pinned revision before the security backport.", "manifest_hash_key": "boringssl_base_patch_sha256", "runtime_relative_path": "rebuild/third_party/curl-impersonate/patches/0002-boringssl-v1.5.2-base.patch"
+    },
+    {
+      "id": "brotli-v1.5.2-integration", "component": "brotli", "path": "third_party/curl-impersonate/patches/0004-brotli-v1.5.2.patch", "sha256": "d59ec1994ae6285222f65dd7192c2cbcbc0d0ae6c85eb5fce1cae735010f4d4f",
+      "purpose": "Apply the curl-impersonate Brotli build integration to Brotli 1.2.0.", "manifest_hash_key": "brotli_patch_sha256", "runtime_relative_path": "rebuild/third_party/curl-impersonate/patches/0004-brotli-v1.5.2.patch"
+    },
+    {
+      "id": "nghttp2-priority-compatibility", "component": "nghttp2", "path": "third_party/curl-impersonate/patches/0005-nghttp2-1.68.1-outbound-priority-compat.patch", "sha256": "bf30fc417c26afcaafe732629073db13fc1563edcd7964ee7c1fbf300f7eb3f3",
+      "purpose": "Restore outbound legacy dependency-priority submission required by browser impersonation profiles; this is not a CVE backport.", "manifest_hash_key": "nghttp2_priority_compat_patch_sha256", "runtime_relative_path": "rebuild/third_party/curl-impersonate/patches/0005-nghttp2-1.68.1-outbound-priority-compat.patch"
+    },
+    {
+      "id": "curl-source-builder", "component": "curl-impersonate", "path": "tools/build-curl-impersonate.sh", "sha256": "09f1a96151822bd4395375a9f58f2b3b5a2fe92fd9e4d7d769824d8d8774e01f",
+      "purpose": "Content-addressed native source builder that verifies archives, applies patches, probes impersonation behavior, and emits the complete checksum closure.", "manifest_hash_key": "builder_sha256", "runtime_relative_path": "rebuild/tools/build-curl-impersonate.sh"
+    },
+    {
+      "id": "static-deps-source-builder", "component": "libmicrohttpd", "path": "tools/build-static-deps.sh", "sha256": "b7cd7ddc7abff4b6d2b1b4d2fde7040e2236a98d09347bb3886d1706a19b4d26",
+      "purpose": "Content-addressed native builder for statically embedded libmicrohttpd and libyaml.", "manifest_hash_key": "builder_sha256", "runtime_relative_path": "rebuild/tools/build-static-deps.sh"
+    }
+  ],
+  "patches": [
+    {
+      "id": "CVE-2026-35189", "component": "boringssl", "path": "third_party/curl-impersonate/patches/0003-boringssl-CVE-2026-35189.patch", "sha256": "2c9277a0576c6ed943386490c1ed53ba2e5b8ccef2f1ec4c0c326e4e2177c2dd",
+      "purpose": "Backport the required upstream CRL distribution-point matching prerequisite and the CVE fix that rejects nameRelativeToCRLIssuer.", "upstream_commit": "9b639f5b3b086508c03f6a4a1792e4a6043777ac", "upstream_url": "https://github.com/google/boringssl/commit/9b639f5b3b086508c03f6a4a1792e4a6043777ac", "upstream_patch_sha256": "c58eb56d800d78f5f9ca77b4a3aefa743edf9fd0f1ed298c931e140cec952033", "fix_commit_manifest_key": "boringssl_security_fix_commit",
+      "prerequisites": [{ "commit": "5386d908a663a424d154cbae7f76f2266c60c2fe", "url": "https://github.com/google/boringssl/commit/5386d908a663a424d154cbae7f76f2266c60c2fe", "patch_sha256": "accaf4ad34f59db72e9dd69a0cfe1a64af200aab8ef64dd67ac7d9bba5a148e2", "manifest_key": "boringssl_security_prerequisite_commit" }],
+      "manifest_hash_key": "boringssl_security_patch_sha256", "patched_file_manifest_key": "boringssl_patched_x509_vfy_sha256"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "id": "CVE-2026-92392", "component": "curl", "severity": "high", "cwe": 416, "resolution": "upstream-version", "state": "resolved", "response": ["update"],
+      "description": "curl 8.12.0 through 8.22.0 can use a freed Curl_easy during HTTP/2 upload retry handling.", "advisory_url": "https://curl.se/docs/CVE-2026-92392.html", "fixed_version": "8.23.0", "fixed_commit": "8b0744af5b1b631da5b938ca31c3f9895ad5a321", "version_evidence_manifest_key": "curl_version", "version_evidence_value": "8.23.0-IMPERSONATE",
+      "evidence_manifest_keys": ["curl_version", "curl_source_sha256", "curl_http2_source_sha256"],
+      "detail": "Resolved by consuming upstream curl 8.23.0, which the curl advisory identifies as not affected; no local CVE patch or backport pedigree is claimed."
+    },
+    {
+      "id": "CVE-2026-27135", "component": "nghttp2", "severity": "high", "score": 7.5, "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "resolution": "upstream-version", "state": "resolved", "response": ["update"],
+      "description": "nghttp2 through 1.68.0 can continue parsing after session termination and reach a remotely triggerable assertion failure.", "advisory_url": "https://github.com/nghttp2/nghttp2/security/advisories/GHSA-6933-cjhr-5qg6", "fixed_version": "1.68.1", "fixed_commit": "5c7df8fa815ac1004d9ecb9d1f7595c4d37f46e1", "version_evidence_manifest_key": "nghttp2_version", "version_evidence_value": "1.68.1",
+      "evidence_manifest_keys": ["nghttp2_version", "nghttp2_source_sha256", "nghttp2_security_session_sha256"],
+      "detail": "Resolved by consuming upstream nghttp2 1.68.1, the advisory's patched version; the detached signature bytes are retained but signer-key authentication is a separate release gate. The priority-compatibility patch is not represented as a security fix."
+    },
+    {
+      "id": "CVE-2026-35189", "component": "boringssl", "severity": "low", "resolution": "verified-backport", "state": "resolved_with_pedigree", "response": ["update"],
+      "description": "BoringSSL can allocate excessive memory while processing X.509 nameRelativeToCRLIssuer CRL distribution points.", "advisory_url": "https://github.com/google/boringssl/blob/main/docs/advisories/2026-09-29.md", "fixed_version": "git.673e61fc215b178a90c0e67858bbf162c8158993+fastbed.cve-2026-35189", "fixed_commit": "9b639f5b3b086508c03f6a4a1792e4a6043777ac", "version_evidence_manifest_key": "boringssl_revision", "version_evidence_value": "673e61fc215b178a90c0e67858bbf162c8158993", "patch_id": "CVE-2026-35189",
+      "evidence_manifest_keys": ["boringssl_revision", "boringssl_security_patch_sha256", "boringssl_security_prerequisite_commit", "boringssl_security_fix_commit", "boringssl_patched_x509_vfy_sha256"],
+      "detail": "Resolved on the pinned BoringSSL base by one hash-bound local patch containing prerequisite 5386d908a663a424d154cbae7f76f2266c60c2fe and fix 9b639f5b3b086508c03f6a4a1792e4a6043777ac; the builder verifies the resulting x509_vfy.cc digest."
+    }
+  ],
+  "relationships": [
+    { "from": "fastbed", "to": "yyjson" }, { "from": "fastbed", "to": "crawler-user-agents" }, { "from": "fastbed", "to": "libmicrohttpd" }, { "from": "fastbed", "to": "libyaml" }, { "from": "fastbed", "to": "curl-impersonate" },
+    { "from": "fastbed", "to": "runtime:pcre2" }, { "from": "fastbed", "to": "runtime:musl" }, { "from": "fastbed", "to": "runtime:libgcc" }, { "from": "fastbed", "to": "runtime:libstdc++" }, { "from": "fastbed", "to": "runtime:ca-certificates-bundle" }, { "from": "fastbed", "to": "runtime:busybox" },
+    { "from": "libmicrohttpd", "to": "runtime:musl" }, { "from": "curl-impersonate", "to": "curl" }, { "from": "curl-impersonate", "to": "runtime:libstdc++" }, { "from": "curl-impersonate", "to": "runtime:libgcc" },
+    { "from": "curl", "to": "boringssl" }, { "from": "curl", "to": "brotli" }, { "from": "curl", "to": "nghttp2" }, { "from": "curl", "to": "zlib-static" }, { "from": "curl", "to": "zstd" }, { "from": "curl", "to": "libidn2" }, { "from": "curl", "to": "runtime:musl" }, { "from": "libidn2", "to": "libunistring" }
+  ],
+  "required_runtime_packages": ["alpine-release", "busybox", "ca-certificates", "ca-certificates-bundle", "libgcc", "libstdc++", "musl", "pcre2"]
+}

@@ -1,0 +1,174 @@
+{
+  "alternatives": [],
+  "generator": "/home/pie/src/fastbed/benchmark/prepare_workload.py",
+  "generator_sha256": "0884ae756728ce62cb41ea0f16708872b159d85c4d0ba0ff4b0e796ce4f6a99c",
+  "python_results": "/home/pie/src/fastbed/artifacts/python-oracle-full-20261016/results.jsonl",
+  "python_results_sha256": "66e91c8b2f1aca8088b0fa5c01cf0359664124486e7615af90e1654a8c2689f3",
+  "rows": [
+    {
+      "bytes": 1566,
+      "category": "other",
+      "digest": "aa685a6ee557fdaad1a2cce303ba077f22f50f94ff5347060a535d68c4566136",
+      "line": 279,
+      "status": 200,
+      "target": "/25813264588296275/photos/p.25813264688296265/25813264688296265/?type=3",
+      "url": "https://facebook.com/25813264588296275/photos/p.25813264688296265/25813264688296265/?type=3"
+    },
+    {
+      "bytes": 6307,
+      "category": "groups",
+      "digest": "01112233d67b93941c1ebff980f430a739a34f45406dfa9fc24d1ed94f222d68",
+      "line": 521,
+      "status": 200,
+      "target": "/groups/256417828601560/posts/1683992985844030",
+      "url": "https://facebook.com/groups/256417828601560/posts/1683992985844030"
+    },
+    {
+      "bytes": 3822,
+      "category": "other",
+      "digest": "b42050b374739c108a4b693c10e08429e79226f84743c305c7d503522f3a4fbc",
+      "line": 764,
+      "status": 200,
+      "target": "/https%3A//www.facebook.com/watch?v=1437823717326781&q=%7B%7B__import__(%27os%27",
+      "url": "https://facebook.com/https%3A//www.facebook.com/watch?v=1437823717326781&q={{__import__(%27os%27"
+    },
+    {
+      "bytes": 6467,
+      "category": "reel",
+      "digest": "b0aa22f5afd2ca5014ea443c22944c31c207f03c96d2565b9fbd02f51b4b0f16",
+      "line": 8048,
+      "status": 200,
+      "target": "/reel/2179630576280040",
+      "url": "https://facebook.com/reel/2179630576280040"
+    },
+    {
+      "bytes": 6247,
+      "category": "videos",
+      "digest": "5eb8aea96edb563657585f4e34358db74bb6b21f3d1a55cfefcaba1ea9360f98",
+      "line": 8237,
+      "status": 200,
+      "target": "/clefvn/videos/trong-chu%E1%BB%97i-100-b%C3%A0i-d%E1%BB%B1-thi-20-ti%E1%BA%BFt-m%E1%BB%A5c-xu%E1%BA%A5t-s%E1%BA%AFc-%C4%91%C3%A3-l%E1%BB%8Dt-v%C3%A0o-v%C3%B2ng-chung-kh%E1%BA%A3o-vi%E1%BB%87n-/1974717850565518",
+      "url": "https://facebook.com/clefvn/videos/trong-chu%E1%BB%97i-100-b%C3%A0i-d%E1%BB%B1-thi-20-ti%E1%BA%BFt-m%E1%BB%A5c-xu%E1%BA%A5t-s%E1%BA%AFc-%C4%91%C3%A3-l%E1%BB%8Dt-v%C3%A0o-v%C3%B2ng-chung-kh%E1%BA%A3o-vi%E1%BB%87n-/1974717850565518"
+    },
+    {
+      "bytes": 3883,
+      "category": "permalink.php",
+      "digest": "ac2da2dbc0dcb482bd69bc6087407866881fb0406e6b1b4bac4fc8e42861fa68",
+      "line": 8310,
+      "status": 200,
+      "target": "/permalink.php?id=100092161735603&story_fbid=pfbid0rxYMYRPFGcLe5UZNamM6qqnWw3gGJ6P2Eb6ze98WrYcn2pfVDa9y3d1bH42faxSrl",
+      "url": "https://facebook.com/permalink.php?id=100092161735603&story_fbid=pfbid0rxYMYRPFGcLe5UZNamM6qqnWw3gGJ6P2Eb6ze98WrYcn2pfVDa9y3d1bH42faxSrl"
+    },
+    {
+      "bytes": 5827,
+      "category": "posts",
+      "digest": "9a7fb827f4ed3cdf4b385a1fb0d3d2cdb627f13ed242e3ee0b62c28b87f65625",
+      "line": 8430,
+      "status": 200,
+      "target": "/taiwancce/posts/-%F0%9D%9F%AD%F0%9D%9F%AC-%F0%9D%9F%AE%F0%9D%9F%AF%F0%9D%99%85%F0%9D%99%9E%F0%9D%99%A2-%F0%9D%99%8C%F0%9D%99%AA%F0%9D%99%9A%F0%9D%99%9A%F0%9D%99%A3%E8%82%8C%E6%83%85%E5%9B%9B%E5%B0%84%E6%AD%A3%E5%BC%8F%E9%A0%90%E5%91%8A%E8%8F%AF%E9%BA%97%E7%99%BB%E5%A0%B4%E5%BE%88%E4%B8%8D%E5%B9%B8%E5%9C%B0%E4%BD%A0%E5%BE%97%E4%BA%86%E7%9B%B4%E7%94%B7%E7%99%8C%E4%BD%A0%E5%B0%87%E6%9C%83%E6%88%90%E7%82%BA%E7%95%B0%E6%80%A7%E6%88%80%E7%95%B6%E7%9B%B4%E7%94%B7%E8%AE%8A%E6%88%90%E4%B8%80%E7%A8%AE%E7%97%85%E6%8E%B0%E5%BD%8E%E6%89%8D%E6%98%AF%E7%9C%9F%E6%AD%A3%E6%95%91%E8%B4%96%E8%84%BE%E6%B0%A3mean%E7%88%86%E7%9A%84%E5%81%A5%E8%BA%AB%E7%9A%87%E5%90%8E%E8%82%8C%E5%A7%86%E8%B6%85%E4%BA%BA%E9%81%87%E4%B8%8A%E5%AC%8C/1713689097433084",
+      "url": "https://facebook.com/taiwancce/posts/-%F0%9D%9F%AD%F0%9D%9F%AC-%F0%9D%9F%AE%F0%9D%9F%AF%F0%9D%99%85%F0%9D%99%9E%F0%9D%99%A2-%F0%9D%99%8C%F0%9D%99%AA%F0%9D%99%9A%F0%9D%99%9A%F0%9D%99%A3%E8%82%8C%E6%83%85%E5%9B%9B%E5%B0%84%E6%AD%A3%E5%BC%8F%E9%A0%90%E5%91%8A%E8%8F%AF%E9%BA%97%E7%99%BB%E5%A0%B4%E5%BE%88%E4%B8%8D%E5%B9%B8%E5%9C%B0%E4%BD%A0%E5%BE%97%E4%BA%86%E7%9B%B4%E7%94%B7%E7%99%8C%E4%BD%A0%E5%B0%87%E6%9C%83%E6%88%90%E7%82%BA%E7%95%B0%E6%80%A7%E6%88%80%E7%95%B6%E7%9B%B4%E7%94%B7%E8%AE%8A%E6%88%90%E4%B8%80%E7%A8%AE%E7%97%85%E6%8E%B0%E5%BD%8E%E6%89%8D%E6%98%AF%E7%9C%9F%E6%AD%A3%E6%95%91%E8%B4%96%E8%84%BE%E6%B0%A3mean%E7%88%86%E7%9A%84%E5%81%A5%E8%BA%AB%E7%9A%87%E5%90%8E%E8%82%8C%E5%A7%86%E8%B6%85%E4%BA%BA%E9%81%87%E4%B8%8A%E5%AC%8C/1713689097433084"
+    },
+    {
+      "bytes": 6573,
+      "category": "reel",
+      "digest": "b632423801bbe4e5895e1175c1b3d0094de9ee946f6ab007f1c3de863c1bbdb7",
+      "line": 8542,
+      "status": 200,
+      "target": "/reel/1093208096946192",
+      "url": "https://facebook.com/reel/1093208096946192"
+    },
+    {
+      "bytes": 4479,
+      "category": "photo",
+      "digest": "739954b8e8553d02f16631564e78c92dc4fa57ed0cf5204bc89d07313840ac4f",
+      "line": 8547,
+      "status": 200,
+      "target": "/photo.php?fbid=1551890196975192&set=a.456931389804417&type=3",
+      "url": "https://facebook.com/photo.php?fbid=1551890196975192&set=a.456931389804417&type=3"
+    },
+    {
+      "bytes": 6201,
+      "category": "watch",
+      "digest": "67be8fc4c24882e44b438efcfdea33dd5c7564df7859ac45b79ce3c714433f3f",
+      "line": 9033,
+      "status": 200,
+      "target": "/watch?v=1744505179996152",
+      "url": "https://facebook.com/watch?v=1744505179996152"
+    },
+    {
+      "bytes": 5879,
+      "category": "posts",
+      "digest": "84e10fd36679e73941170d7aaf4f611da537d349ccb8fb869ad5a69be8205c77",
+      "line": 9319,
+      "status": 200,
+      "target": "/theygopedia/posts/1548427373970401",
+      "url": "https://facebook.com/theygopedia/posts/1548427373970401"
+    },
+    {
+      "bytes": 5934,
+      "category": "groups",
+      "digest": "b46eb2c33fa946cf15600f09f28ade34719b442b0727d4bc077d4ad98da3ffbc",
+      "line": 9341,
+      "status": 200,
+      "target": "/groups/102649926790232/permalink/3439765706411954",
+      "url": "https://facebook.com/groups/102649926790232/permalink/3439765706411954"
+    },
+    {
+      "bytes": 6200,
+      "category": "videos",
+      "digest": "179a079aca4fae0c6dec86d658aef7a80c39000422cb9c5d402de393b6eb5270",
+      "line": 9703,
+      "status": 200,
+      "target": "/qvspeed2025/videos/1744505179996152",
+      "url": "https://facebook.com/qvspeed2025/videos/1744505179996152"
+    },
+    {
+      "bytes": 6459,
+      "category": "reel",
+      "digest": "dbbe4160ac9fdb229845aa7c35403e4036f4ec4ec70c2fa45cdb98378e89c0ff",
+      "line": 9725,
+      "status": 200,
+      "target": "/reel/1102314565600450",
+      "url": "https://facebook.com/reel/1102314565600450"
+    },
+    {
+      "bytes": 6095,
+      "category": "videos",
+      "digest": "32cd87c96be9a5f791f803475ab060dd7a4b50b69e6360aa5b14ca6aa22ca948",
+      "line": 10116,
+      "status": 200,
+      "target": "/wenweipo/videos/%E6%97%A5%E6%9C%AC%E5%A4%A7%E9%98%AA%E5%9C%B0%E8%BB%8A%E7%A5%AD%E6%8E%A5%E9%80%A3%E7%BF%BB%E8%BB%8A-%E9%87%802%E6%AD%BB16%E5%82%B7%E6%97%A5%E6%9C%AC%E5%A4%A7%E9%98%AA%E5%BA%9C%E6%97%A5%E5%89%8D%E5%9C%A8%E8%88%89%E8%A1%8C%E5%82%B3%E7%B5%B1%E7%A7%8B%E5%AD%A3%E5%9C%B0%E8%BB%8A%E7%A5%AD%E3%81%A0%E3%82%93%E3%81%98%E3%82%8A%E7%A5%AD%E3%82%8A%E5%B7%A1%E8%A1%8C%E6%9C%9F%E9%96%93%E6%8E%A5%E9%80%A3%E7%99%BC%E7%94%9F%E4%BA%86%E5%85%A9%E5%AE%97%E9%87%8D%E5%A4%A7%E7%9A%84%E7%A5%AD%E5%85%B8%E8%8A%B1%E8%BB%8A%E7%BF%BB%E5%81%B4%E4%BA%8B%E6%95%85%E4%B8%8D%E5%B9%B8%E9%80%A0%E6%88%902%E4%BA%BA%E6%AD%BB%E4%BA%A116%E4%BA%BA%E8%BC%95%E9%87%8D%E5%82%B7%E5%9C%B0%E8%BB%8A%E7%A5%AD/1649344786738762",
+      "url": "https://facebook.com/wenweipo/videos/%E6%97%A5%E6%9C%AC%E5%A4%A7%E9%98%AA%E5%9C%B0%E8%BB%8A%E7%A5%AD%E6%8E%A5%E9%80%A3%E7%BF%BB%E8%BB%8A-%E9%87%802%E6%AD%BB16%E5%82%B7%E6%97%A5%E6%9C%AC%E5%A4%A7%E9%98%AA%E5%BA%9C%E6%97%A5%E5%89%8D%E5%9C%A8%E8%88%89%E8%A1%8C%E5%82%B3%E7%B5%B1%E7%A7%8B%E5%AD%A3%E5%9C%B0%E8%BB%8A%E7%A5%AD%E3%81%A0%E3%82%93%E3%81%98%E3%82%8A%E7%A5%AD%E3%82%8A%E5%B7%A1%E8%A1%8C%E6%9C%9F%E9%96%93%E6%8E%A5%E9%80%A3%E7%99%BC%E7%94%9F%E4%BA%86%E5%85%A9%E5%AE%97%E9%87%8D%E5%A4%A7%E7%9A%84%E7%A5%AD%E5%85%B8%E8%8A%B1%E8%BB%8A%E7%BF%BB%E5%81%B4%E4%BA%8B%E6%95%85%E4%B8%8D%E5%B9%B8%E9%80%A0%E6%88%902%E4%BA%BA%E6%AD%BB%E4%BA%A116%E4%BA%BA%E8%BC%95%E9%87%8D%E5%82%B7%E5%9C%B0%E8%BB%8A%E7%A5%AD/1649344786738762"
+    },
+    {
+      "bytes": 4493,
+      "category": "photo",
+      "digest": "06162aa6b5239d15e3cb7226f9aa67c25a902aadd434e0116631d948abbcbef8",
+      "line": 10141,
+      "status": 200,
+      "target": "/photo.php?fbid=1636046694853343&set=a.786673659790655&type=3",
+      "url": "https://facebook.com/photo.php?fbid=1636046694853343&set=a.786673659790655&type=3"
+    }
+  ],
+  "schema": "fastbed-http-workload-manifest-v1",
+  "selected_lines": [
+    279,
+    521,
+    764,
+    8048,
+    8237,
+    8310,
+    8430,
+    8542,
+    8547,
+    9033,
+    9319,
+    9341,
+    9703,
+    9725,
+    10116,
+    10141
+  ],
+  "workload": "/home/pie/src/fastbed/benchmark/workloads/service-medium-hard-16.tsv",
+  "workload_sha256": "7882d60f87e0de08dc9cc6664f75c5752baeb8822b05f4a8893e4ff28c277f4f"
+}

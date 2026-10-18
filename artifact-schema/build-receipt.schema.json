@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fastbed.invalid/schema/build-receipt-2.json",
+  "title": "Fastbed post-link build receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_kind",
+    "generator_sha256",
+    "source_date_epoch",
+    "target_arch",
+    "source",
+    "fastbed",
+    "curl_prefix",
+    "static_deps_prefix",
+    "link",
+    "lgpl_relink"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 2 },
+    "receipt_kind": { "const": "fastbed-post-link" },
+    "generator_sha256": { "$ref": "#/$defs/sha256" },
+    "source_date_epoch": { "type": "integer", "minimum": 0 },
+    "target_arch": { "enum": ["amd64", "arm64"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tree_sha256", "paths"],
+      "properties": {
+        "tree_sha256": { "$ref": "#/$defs/sha256" },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        }
+      }
+    },
+    "fastbed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unstripped_sha256",
+        "runtime_sha256",
+        "relinked_sha256",
+        "build_id"
+      ],
+      "properties": {
+        "unstripped_sha256": { "$ref": "#/$defs/sha256" },
+        "runtime_sha256": { "$ref": "#/$defs/sha256" },
+        "relinked_sha256": { "$ref": "#/$defs/sha256" },
+        "build_id": { "$ref": "#/$defs/buildId" }
+      }
+    },
+    "curl_prefix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checksum_aggregate_sha256",
+        "sha256sums_sha256",
+        "build_manifest_sha256",
+        "libraries"
+      ],
+      "properties": {
+        "checksum_aggregate_sha256": { "$ref": "#/$defs/sha256" },
+        "sha256sums_sha256": { "$ref": "#/$defs/sha256" },
+        "build_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "libraries": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": { "$ref": "#/$defs/fileDigest" }
+        }
+      }
+    },
+    "static_deps_prefix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checksum_aggregate_sha256",
+        "sha256sums_sha256",
+        "build_manifest_sha256",
+        "libraries",
+        "source_archives"
+      ],
+      "properties": {
+        "checksum_aggregate_sha256": { "$ref": "#/$defs/sha256" },
+        "sha256sums_sha256": { "$ref": "#/$defs/sha256" },
+        "build_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "libraries": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/fileDigest" }
+        },
+        "source_archives": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/fileDigest" }
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "sha256"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "lgpl_relink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "archive_path",
+        "archive_sha256",
+        "content_sha256s_sha256",
+        "relink_script_sha256",
+        "link_command_sha256",
+        "byte_identical",
+        "libraries",
+        "source_archives"
+      ],
+      "properties": {
+        "archive_path": {
+          "type": "string",
+          "pattern": "^relink/fastbed-relink-(amd64|arm64)\\.tar\\.gz$"
+        },
+        "archive_sha256": { "$ref": "#/$defs/sha256" },
+        "content_sha256s_sha256": { "$ref": "#/$defs/sha256" },
+        "relink_script_sha256": { "$ref": "#/$defs/sha256" },
+        "link_command_sha256": { "$ref": "#/$defs/sha256" },
+        "byte_identical": { "const": true },
+        "libraries": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/fileDigest" }
+        },
+        "source_archives": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/fileDigest" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "buildId": { "type": "string", "pattern": "^[0-9a-f]{16,128}$" },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "fileDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

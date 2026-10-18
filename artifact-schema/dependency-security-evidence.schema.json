@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fastbed.invalid/schema/dependency-security-evidence-1.json",
+  "title": "Fastbed dependency security evidence manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "created", "findings"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "created": { "type": "string", "format": "date" },
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "component",
+          "version",
+          "source_sha256",
+          "resolution",
+          "fixed_version",
+          "evidence_manifest_keys",
+          "result"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^CVE-[0-9]{4}-[0-9]+$" },
+          "component": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "source_sha256": { "$ref": "#/$defs/sha256" },
+          "resolution": {
+            "enum": ["upstream-version", "verified-backport"]
+          },
+          "fixed_version": { "type": "string", "minLength": 1 },
+          "fix_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "patch_sha256": { "$ref": "#/$defs/sha256" },
+          "patched_source_sha256": { "$ref": "#/$defs/sha256" },
+          "prerequisites": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["commit", "patch_sha256"],
+              "properties": {
+                "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+                "patch_sha256": { "$ref": "#/$defs/sha256" }
+              }
+            }
+          },
+          "evidence_manifest_keys": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+          },
+          "verification_command": { "type": "string", "minLength": 1 },
+          "unpatched_expected_exit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "patched_expected_exit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "result": { "const": "pass" }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "resolution": { "const": "verified-backport" }
+              }
+            },
+            "then": {
+              "required": [
+                "fix_commit",
+                "patch_sha256",
+                "patched_source_sha256"
+              ]
+            },
+            "else": {
+              "not": {
+                "anyOf": [
+                  { "required": ["patch_sha256"] },
+                  { "required": ["patched_source_sha256"] },
+                  { "required": ["prerequisites"] }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

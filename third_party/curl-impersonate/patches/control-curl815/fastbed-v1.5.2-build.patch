@@ -1,0 +1,59 @@
+diff --git a/Makefile.in b/Makefile.in
+index 9a99f98..18317c2 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -317,9 +317,15 @@ $(boringssl_static_libs): boringssl-$(BORING_SSL_COMMIT).zip boringssl-$(BORING_
+ nghttp2-$(NGHTTP2_VERSION).tar.bz2:
+ 	curl -L $(NGHTTP2_URL) -o nghttp2-$(NGHTTP2_VERSION).tar.bz2
+ 
+-$(nghttp2_static_libs): nghttp2-$(NGHTTP2_VERSION).tar.bz2
++# Patch nghttp2 and use a dummy '.patched' file to mark it patched
++nghttp2-$(NGHTTP2_VERSION)/.patched: $(srcdir)/patches/nghttp2-1.63.0-CVE-2026-27135.patch
+ 	tar -xf nghttp2-$(NGHTTP2_VERSION).tar.bz2
+ 	cd nghttp2-$(NGHTTP2_VERSION)
++	for p in $^; do patch -p1 < $$p; done
++	touch .patched
++
++$(nghttp2_static_libs): nghttp2-$(NGHTTP2_VERSION).tar.bz2 nghttp2-$(NGHTTP2_VERSION)/.patched
++	cd nghttp2-$(NGHTTP2_VERSION)
+ 
+ 	# Set up the configure flags to nghttp2.
+ 	# If the user provided the --host flag to our configure script
+@@ -341,7 +347,8 @@ ngtcp2-$(NGTCP2_VERSION).tar.bz2:
+ 	curl -L $(NGTCP2_URL) -o ngtcp2-$(NGTCP2_VERSION).tar.bz2
+ 
+ # Patch ngtcp2 and use a dummy '.patched' file to mark it patched
+-ngtcp2-$(NGTCP2_VERSION)/.patched: $(srcdir)/patches/ngtcp2.patch
++ngtcp2-$(NGTCP2_VERSION)/.patched: $(srcdir)/patches/ngtcp2.patch \
++	$(srcdir)/patches/ngtcp2-1.20.0-CVE-2026-40170.patch
+ 	tar -xf ngtcp2-$(NGTCP2_VERSION).tar.bz2
+ 	cd ngtcp2-$(NGTCP2_VERSION)
+ 	for p in $^; do patch -p1 < $$p; done
+@@ -441,7 +448,8 @@ $(CURL_VERSION).tar.gz:
+ 		-o "$(CURL_VERSION).tar.gz"
+ 
+ # Apply the "Chorme version" patches and mark using a dummy file
+-$(CURL_VERSION)/.patched: $(srcdir)/patches/curl.patch
++$(CURL_VERSION)/.patched: $(srcdir)/patches/curl.patch \
++	$(srcdir)/patches/curl-8.15.0-CVE-2026-92392.patch
+ 	rm -Rf $(CURL_VERSION)
+ 	tar -xf $(CURL_VERSION).tar.gz
+ 	mv curl-$(CURL_VERSION) $(CURL_VERSION)  # fix directory name
+@@ -482,9 +490,16 @@ $(CURL_VERSION)/.chrome: $(chrome_libs)	$(CURL_VERSION).tar.gz $(CURL_VERSION)/.
+ 	  config_flags="$$config_flags --with-zlib=$(with_zlib)"; \
+ 	  config_flags="$$config_flags --with-zstd=$(with_zstd)"; \
+ 	  config_flags="$$config_flags --without-librtmp"; \
++	  config_flags="$$config_flags --disable-dict --disable-file --disable-ftp"; \
++	  config_flags="$$config_flags --disable-gopher --disable-imap --disable-ipfs"; \
+ 	  config_flags="$$config_flags --disable-ldap --disable-ldaps"; \
++	  config_flags="$$config_flags --disable-mqtt --disable-pop3 --disable-rtsp"; \
++	  config_flags="$$config_flags --disable-smb --disable-smtp --disable-telnet"; \
++	  config_flags="$$config_flags --disable-tftp"; \
++	  config_flags="$$config_flags --disable-doh --disable-unix-sockets"; \
++	  config_flags="$$config_flags --disable-get-easy-options"; \
+ 	  config_flags="$$config_flags --without-libpsl"; \
+-	  config_flags="$$config_flags --enable-websockets"; \
++	  config_flags="$$config_flags --disable-websockets"; \
+ 	  config_flags="$$config_flags --enable-ech"; \
+ 	  config_flags="$$config_flags --enable-ssls-export"; \
+ 	  config_flags="$$config_flags --enable-ipv6"; \
